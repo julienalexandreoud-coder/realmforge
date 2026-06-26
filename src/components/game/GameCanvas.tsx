@@ -138,6 +138,13 @@ export default function GameCanvas() {
       }
       ctx.globalAlpha = 1;
 
+      // ---- unifying navy vignette overlay (pulls world into the dark theme) ----
+      const vg = ctx.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.2, w / 2, h * 0.5, Math.max(w, h) * 0.75);
+      vg.addColorStop(0, "rgba(11,18,38,0)");
+      vg.addColorStop(1, "rgba(5,8,20,0.55)");
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, w, h);
+
       // floating numbers (pixel font)
       for (const f of store.floatingNumbers) {
         const age = performance.now() - f.born;
@@ -346,7 +353,7 @@ function drawBuilding(
       if (!ch || ch === "." || ch === " ") continue;
       const color = def.palette[ch];
       if (!color) continue;
-      ctx.fillStyle = color;
+      ctx.fillStyle = themeTint(color);
       ctx.fillRect(Math.floor(offX + c * px), Math.floor(offY + r * px + bob), px, px);
     }
   }
@@ -371,7 +378,7 @@ function drawConstruction(
   // draw only the bottom `progress` fraction of the building, rising
   const visibleRows = Math.max(1, Math.ceil(h * progress));
   // scaffolding behind
-  ctx.fillStyle = "#8a6a3a";
+  ctx.fillStyle = "#3a2a4a";
   for (let c = 0; c <= w; c += 2) {
     ctx.fillRect(Math.floor(offX + c * px - 1), Math.floor(offY), 1, h * px);
   }
@@ -385,12 +392,12 @@ function drawConstruction(
       if (!ch || ch === "." || ch === " ") continue;
       const color = def.palette[ch];
       if (!color) continue;
-      ctx.fillStyle = color;
+      ctx.fillStyle = themeTint(color);
       ctx.fillRect(Math.floor(offX + c * px), Math.floor(offY + r * px - bob), px, px);
     }
   }
   // top construction line glow
-  ctx.fillStyle = "rgba(255,235,120,0.8)";
+  ctx.fillStyle = "rgba(34,211,238,0.85)";
   const topRow = Math.max(0, h - visibleRows);
   ctx.fillRect(Math.floor(offX), Math.floor(offY + topRow * px - bob), w * px, 2);
 }
@@ -401,7 +408,7 @@ function drawProgressBar(ctx: CanvasRenderingContext2D, x: number, y: number, pr
   ctx.fillRect(x - bw / 2 - 1, y - 1, bw + 2, 7);
   ctx.fillStyle = "rgba(255,255,255,0.15)";
   ctx.fillRect(x - bw / 2, y, bw, 5);
-  ctx.fillStyle = surge ? "#ffd700" : "#7dd3fc";
+  ctx.fillStyle = surge ? "#fbbf24" : "#22d3ee";
   ctx.fillRect(x - bw / 2, y, Math.floor(bw * Math.min(1, progress)), 5);
 }
 
@@ -421,6 +428,38 @@ function drawHammer(ctx: CanvasRenderingContext2D, x: number, y: number, anim: n
   ctx.fillStyle = "#888";
   ctx.fillRect(-px * 3, -px, px * 6, px);
   ctx.restore();
+}
+
+// Mix a building palette color toward the dark navy theme.
+// Glow colors (saturated/bright) are preserved & boosted; muted colors are pulled to navy.
+function themeTint(hex: string): string {
+  const { r, g, b } = hexToRgbObj(hex);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lum = (max + min) / 2 / 255;
+  const sat = max === 0 ? 0 : (max - min) / max;
+  const isGlow = sat > 0.45 && lum > 0.35; // vivid accent (fire, gold, neon)
+  if (isGlow) {
+    // boost slightly so accents pop against dark
+    return `rgb(${Math.min(255, r + 10)},${Math.min(255, g + 10)},${Math.min(255, b + 10)})`;
+  }
+  // mute toward navy #0b1226
+  const nr = 11, ng = 18, nb = 38;
+  const mix = 0.55;
+  const rr = Math.round(r * (1 - mix) + nr * mix);
+  const gg = Math.round(g * (1 - mix) + ng * mix);
+  const bb = Math.round(b * (1 - mix) + nb * mix);
+  return `rgb(${rr},${gg},${bb})`;
+}
+
+function hexToRgbObj(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace("#", "");
+  if (h.length !== 6) return { r: 128, g: 128, b: 128 };
+  return {
+    r: parseInt(h.substring(0, 2), 16),
+    g: parseInt(h.substring(2, 4), 16),
+    b: parseInt(h.substring(4, 6), 16),
+  };
 }
 
 // crude pixel text renderer using the canvas font with no smoothing

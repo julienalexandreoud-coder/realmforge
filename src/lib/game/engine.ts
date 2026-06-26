@@ -1,6 +1,18 @@
-// REALMFORGE — pure engine calculations (infinite pixel city builder)
+// REALMFORGE — pure engine calculations (HARD MODE — infinite pixel city builder) v3
 import type { UpgradeId, SaveState, BiomeId } from "./types";
-import { UPGRADES, buildingForPlot, buildingIncomeAt, buildingCompleteBonusAt, BIOMES as BS, ASCENSION_THRESHOLD, OFFLINE_CAP_MS } from "./config";
+import {
+  UPGRADES,
+  buildingForPlot,
+  buildingIncomeAt,
+  buildingCompleteBonusAt,
+  buildingProgressCost as cfgBuildingProgressCost,
+  BIOMES as BS,
+  ASCENSION_THRESHOLD,
+  OFFLINE_CAP_MS,
+  SURGE_DURATION_MS,
+  SURGE_MULT,
+  COMBO_MAX,
+} from "./config";
 
 // ---------- Number formatting ----------
 export function formatNumber(n: number): string {
@@ -26,11 +38,12 @@ export function surgeRemainingMs(s: SaveState, now = Date.now()): number {
   return Math.max(0, s.surgeEndsAt - now);
 }
 export function surgeEndsAtFromNow(now = Date.now()): number {
-  return now + 60_000;
+  return now + SURGE_DURATION_MS;
 }
 
+// each relic +3% global (down from 5%)
 export function relicMultiplier(s: SaveState): number {
-  return 1 + s.relics * 0.05; // each relic +5% global
+  return 1 + s.relics * 0.03;
 }
 
 export function hammerPower(s: SaveState): number {
@@ -38,7 +51,6 @@ export function hammerPower(s: SaveState): number {
   const permBoost = s.perm.tapBoostPerm ? 1.5 : 1;
   return base * permBoost;
 }
-
 export function critChance(s: SaveState): number {
   return UPGRADES.crit.effect(s.upgrades.crit);
 }
@@ -60,51 +72,49 @@ export function autoBuildRate(s: SaveState): number {
 export function comboWindowMs(s: SaveState): number {
   return UPGRADES.combo.effect(s.upgrades.combo);
 }
+// weaker combo: up to ~2.8x at combo 60 (down from 4x)
 export function comboMultiplier(combo: number): number {
-  const c = Math.min(combo, 75);
-  return 1 + c * 0.08; // up to 7x at combo 75
+  const c = Math.min(combo, COMBO_MAX);
+  return 1 + c * 0.03;
 }
 
-// coins earned per tap (immediate feedback)
+// coins earned per tap — slow sqrt scaling (no linear explosion with city size)
 export function tapCoins(s: SaveState, combo: number, crit: boolean): number {
-  const base = 1 + s.builtCount * 0.5; // scales with city size
+  const base = 1 + Math.sqrt(s.builtCount) * 0.5;
   const cMult = comboMultiplier(combo);
   const critM = crit ? critPower(s) : 1;
-  const surgeM = surgeActive(s) ? 3 : 1;
+  const surgeM = surgeActive(s) ? SURGE_MULT : 1;
   return base * cMult * critM * surgeM * coinMult(s) * relicMultiplier(s);
 }
 
-// build progress added per tap (0..1 fraction)
+// build progress added per tap (0..1 fraction) — uses steep cost curve
 export function tapBuild(s: SaveState, combo: number, crit: boolean): number {
-  // progress = hammerPower / buildingCost, where buildingCost scales with index
-  const cost = buildingProgressCost(s.builtCount);
+  const cost = cfgBuildingProgressCost(s.builtCount);
   const cMult = comboMultiplier(combo);
   const critM = crit ? critPower(s) : 1;
-  const surgeM = surgeActive(s) ? 3 : 1;
+  const surgeM = surgeActive(s) ? SURGE_MULT : 1;
   const dmg = hammerPower(s) * cMult * critM * surgeM * relicMultiplier(s);
   return dmg / cost;
 }
 
-// "cost" in build-units to complete a building at given index
-export function buildingProgressCost(index: number): number {
-  return 10 * Math.pow(1.16, index);
-}
+// re-export so imports resolve from engine
+export { cfgBuildingProgressCost as buildingProgressCost };
 
 // coins earned when a building completes
 export function completeBonus(s: SaveState, index: number, combo: number): number {
   const base = buildingCompleteBonusAt(index);
-  return base * coinMult(s) * comboMultiplier(combo) * (surgeActive(s) ? 3 : 1) * relicMultiplier(s);
+  return base * coinMult(s) * comboMultiplier(combo) * (surgeActive(s) ? SURGE_MULT : 1) * relicMultiplier(s);
 }
 
-// income added when building at index completes
+// income added when building at index completes — halved again for slow economy
 export function buildingIncome(s: SaveState, index: number): number {
   const def = buildingForPlot(index);
-  return def.baseIncome * buildingIncomeAt(index) / 2 * incomeMult(s) * relicMultiplier(s);
+  return def.baseIncome * buildingIncomeAt(index) / 4 * incomeMult(s) * relicMultiplier(s);
 }
 
 // total income per second right now
 export function totalIncome(s: SaveState): number {
-  return s.cumulativeIncome * (surgeActive(s) ? 3 : 1);
+  return s.cumulativeIncome * (surgeActive(s) ? SURGE_MULT : 1);
 }
 
 // ---------- Ascension (prestige) ----------
@@ -130,7 +140,8 @@ export function offlineEarnings(s: SaveState, now = Date.now()): { coins: number
   const elapsed = Math.min(now - s.lastSeen, OFFLINE_CAP_MS);
   if (elapsed <= 0 || s.cumulativeIncome <= 0) return { coins: 0, seconds: 0 };
   const seconds = elapsed / 1000;
-  const earned = totalIncome(s) * seconds * 0.5; // 50% efficiency offline
+  // 30% efficiency offline (down from 50%)
+  const earned = totalIncome(s) * seconds * 0.3;
   return { coins: earned, seconds };
 }
 

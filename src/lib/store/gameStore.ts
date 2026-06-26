@@ -134,7 +134,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const s = get();
     const now = Date.now();
     const window = comboWindowMs(s);
-    const newCombo = now - s.lastTapAt <= window ? s.combo + 1 : 1;
+    const newCombo = Math.min(60, now - s.lastTapAt <= window ? s.combo + 1 : 1);
     const crit = Math.random() < critChance(s);
     const audio = getAudio();
     audio.init();
@@ -182,10 +182,12 @@ export const useGame = create<GameStore>((set, get) => ({
       });
     }
 
-    // complete buildings (can chain if huge tap)
+    // complete AT MOST ONE building per tap (prevents chain-completion exploit
+    // where a single over-powered tap awards many exponential bonuses at once).
+    // Excess progress is clamped (not carried to the next, more-expensive building).
     let completed = 0;
-    while (progress >= 1) {
-      progress -= 1;
+    if (progress >= 1) {
+      progress = 0; // discard overflow — you must tap the next building fresh
       const idx = builtCount;
       const bonus = completeBonus(s, idx, newCombo);
       const inc = buildingIncome(s, idx);
@@ -437,7 +439,7 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   hardReset: () => {
-    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v1");
+    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v4");
     const base = defaultSave();
     set({
       ...base,
@@ -490,8 +492,9 @@ export const useGame = create<GameStore>((set, get) => ({
       let totalEarned = updates.totalCoinsEarned ?? s.totalCoinsEarned;
       let runEarned = updates.runCoinsEarned ?? s.runCoinsEarned;
       let maxBiome = s.maxBiomeReached;
-      while (progress >= 1) {
-        progress -= 1;
+      // cap to 1 completion per tick (same anti-chain rule as tap)
+      if (progress >= 1) {
+        progress = 0;
         const idx = builtCount;
         const bonus = completeBonus(s, idx, 0);
         const binc = buildingIncome(s, idx);

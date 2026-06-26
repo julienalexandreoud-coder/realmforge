@@ -2,7 +2,7 @@
 import type { SaveState } from "./types";
 import { defaultSave } from "./config";
 
-const SAVE_KEY = "realmforge-save-v1";
+const SAVE_KEY = "realmforge-save-v4";
 const NAME_KEY = "realmforge-name-v1";
 
 export function loadSave(): SaveState {
@@ -69,8 +69,9 @@ export function isYesterday(dayKey: string | null, ref = new Date()): boolean {
   return todayKey(y) === dayKey;
 }
 
-// migrate old prism-smash saves gracefully: just ignore them (fresh start)
+// migrate old prism-smash/realmforge-v1 saves gracefully: just ignore them (fresh start)
 export function clearOldSave() {
   if (typeof window === "undefined") return;
   localStorage.removeItem("prism-smash-save-v1");
+  localStorage.removeItem("realmforge-save-v1");
 }

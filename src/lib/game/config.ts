@@ -10,114 +10,119 @@ import type {
   SaveState,
 } from "./types";
 
-// ---------- Balance ----------
-export const COMBO_WINDOW_MS = 1200;
-export const COMBO_MAX = 75;
-export const CRIT_BASE = 0.04;
-export const SURGE_DURATION_MS = 60_000;
-export const SURGE_MULT = 3;
-export const ASCENSION_THRESHOLD = 25_000;
-export const OFFLINE_CAP_MS = 8 * 3600 * 1000;
-export const PLOT_W = 64; // world px per plot
+// ---------- Balance (HARD MODE — tuned for ~hours of progression, not minutes) ----------
+export const COMBO_WINDOW_MS = 1000; // tighter combo window = harder to sustain
+export const COMBO_MAX = 60;
+export const CRIT_BASE = 0.03;
+export const SURGE_DURATION_MS = 45_000; // shorter surge
+export const SURGE_MULT = 2.5; // weaker surge
+export const ASCENSION_THRESHOLD = 20_000_000; // first ascension is a long-term goal
+export const OFFLINE_CAP_MS = 6 * 3600 * 1000;
+export const PLOT_W = 64;
 export const GROUND_H = 40;
 export const MAX_DAILY_STREAK = 7;
 
-// income/coin scaling per building index (era)
+// income/coin scaling per building index (era) — slow compounding
 export function buildingIncomeAt(index: number): number {
-  return 2 * Math.pow(1.18, index);
+  return 0.5 * Math.pow(1.08, index);
 }
+// completion bonus — LINEAR (no exponential explosion); main reward is ongoing income
 export function buildingCompleteBonusAt(index: number): number {
-  return 15 * Math.pow(1.22, index);
+  return 5 + index * 0.5;
+}
+// build-units required to complete a building at given index — very steep (bites early)
+export function buildingProgressCost(index: number): number {
+  return 25 * Math.pow(1.55, index);
 }
 
 // ---------- Biomes (cycle infinitely) ----------
 export const BIOMES: BiomeDef[] = [
   {
     id: "plains",
-    name: "Green Plains",
-    sky: ["#7ec0ee", "#bfe3f5", "#e8f6ff"],
-    ground: "#6ab04c",
-    groundDark: "#4a8a36",
-    accent: "#7dd3fc",
+    name: "Dusk Plains",
+    sky: ["#0b1430", "#15203f", "#1e2a4a"],
+    ground: "#1a2b1e",
+    groundDark: "#0f1a12",
+    accent: "#22d3ee",
     decoration: ["..T..", ".TTT.", "TTTTT", "..|.."],
-    decPalette: { T: "#2f7d32", "|:": "#5d3a1a" },
+    decPalette: { T: "#14532d", "|:": "#3a2410" },
     buildings: ["cottage", "windmill", "barn"],
   },
   {
     id: "forest",
-    name: "Deep Forest",
-    sky: ["#5a8f5a", "#8fbf6f", "#cfe8a8"],
-    ground: "#3f6e2f",
-    groundDark: "#2a4d20",
-    accent: "#84cc16",
+    name: "Shadow Wood",
+    sky: ["#0a1a16", "#102820", "#16332a"],
+    ground: "#0f2418",
+    groundDark: "#08160e",
+    accent: "#10b981",
     decoration: ["..F..", ".FFF.", "FFFFF", "FFFFF", "..#.."],
-    decPalette: { F: "#1f5e1f", "#": "#3a2410" },
+    decPalette: { F: "#064e3b", "#": "#3a2410" },
     buildings: ["treehouse", "lodge"],
   },
   {
     id: "desert",
-    name: "Sun Dunes",
-    sky: ["#f6c453", "#f9d976", "#fde8a6"],
-    ground: "#e0a83e",
-    groundDark: "#b9821f",
-    accent: "#fbbf24",
+    name: "Amber Wastes",
+    sky: ["#1a1208", "#2a1d0e", "#3a2814"],
+    ground: "#3a2a14",
+    groundDark: "#241a0c",
+    accent: "#f59e0b",
     decoration: ["..c..", ".ccc.", "ccccc", "..|.."],
     decPalette: { c: "#3f7a2a", "|:": "#7a5a2a" },
     buildings: ["pyramid", "oasis"],
   },
   {
     id: "snow",
-    name: "Frostpeak",
-    sky: ["#9ec7e0", "#cfe4f0", "#eef6fb"],
-    ground: "#e8f0f5",
-    groundDark: "#b8cdd9",
+    name: "Frost Reach",
+    sky: ["#0a1420", "#101e2e", "#162838"],
+    ground: "#1a2a36",
+    groundDark: "#101a24",
     accent: "#67e8f9",
     decoration: ["..*..", ".*P*.", "*PPP*", "..#.."],
-    decPalette: { P: "#2f5d7a", "*": "#ffffff", "#": "#5a4a3a" },
+    decPalette: { P: "#155e75", "*": "#e0f2fe", "#": "#3a2410" },
     buildings: ["igloo", "icecastle"],
   },
   {
     id: "volcano",
     name: "Emberlands",
-    sky: ["#3a1414", "#7a2424", "#c0452a"],
-    ground: "#3a2424",
-    groundDark: "#1f1414",
+    sky: ["#1a0808", "#2a0e0e", "#3a1414"],
+    ground: "#2a1414",
+    groundDark: "#1a0a0a",
     accent: "#fb7185",
     decoration: ["..R..", ".RRR.", "RRRRR", "..^.."],
-    decPalette: { R: "#1a1a1a", "^": "#ff6a00" },
+    decPalette: { R: "#0a0a0a", "^": "#f97316" },
     buildings: ["forge", "obsidian"],
   },
   {
     id: "sky",
     name: "Sky Reach",
-    sky: ["#5fa8d3", "#9fd0f0", "#dff0fb"],
-    ground: "#cfe8ff",
-    groundDark: "#9fc8e8",
-    accent: "#bae6fd",
+    sky: ["#0a1830", "#102240", "#162c50"],
+    ground: "#1a2c48",
+    groundDark: "#101c34",
+    accent: "#38bdf8",
     decoration: ["ooooo", ".....", ".....", "ooooo"],
-    decPalette: { o: "#ffffff" },
+    decPalette: { o: "#cbd5e1" },
     buildings: ["cloudhall", "balloon"],
   },
   {
     id: "space",
     name: "Star Void",
-    sky: ["#0a0a2a", "#1a1a4a", "#2a2a6a"],
-    ground: "#2a2a4a",
-    groundDark: "#1a1a3a",
+    sky: ["#050514", "#0a0a24", "#101034"],
+    ground: "#10102a",
+    groundDark: "#08081a",
     accent: "#a855f7",
     decoration: ["*.*.*", ".....", ".*.*.", "....."],
-    decPalette: { "*": "#ffffff", ".": "transparent" },
+    decPalette: { "*": "#e9d5ff", ".": "transparent" },
     buildings: ["rocket", "dome"],
   },
   {
     id: "void",
     name: "Crystal Rift",
-    sky: ["#1a0a2a", "#3a1a5a", "#6a2a8a"],
-    ground: "#2a1a3a",
-    groundDark: "#1a0a2a",
+    sky: ["#0a0518", "#150a28", "#1f1038"],
+    ground: "#1a1030",
+    groundDark: "#10081f",
     accent: "#e879f9",
     decoration: ["..V..", ".VVV.", "VVVVV", "..V.."],
-    decPalette: { V: "#c026d3" },
+    decPalette: { V: "#a21caf" },
     buildings: ["crystaltower", "riftgate"],
   },
 ];
@@ -501,84 +506,84 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     name: "Hammer Power",
     desc: "Each tap builds more of the current structure.",
     icon: "🔨",
-    baseCost: 12,
-    costGrowth: 1.17,
+    baseCost: 20,
+    costGrowth: 1.22,
     maxLevel: 250,
     category: "tap",
-    effect: (l) => 1 + l * 1.4,
-    effectLabel: (l) => `+${(1 + l * 1.4).toFixed(1)} build`,
+    effect: (l) => 1 + l * 0.6,
+    effectLabel: (l) => `+${(1 + l * 0.6).toFixed(1)} build`,
   },
   coins: {
     id: "coins",
     name: "Coin Polish",
     desc: "Earn more coins from every tap and completion.",
     icon: "🪙",
-    baseCost: 40,
-    costGrowth: 1.2,
+    baseCost: 60,
+    costGrowth: 1.25,
     maxLevel: 200,
     category: "tap",
-    effect: (l) => 1 + l * 0.14,
-    effectLabel: (l) => `×${(1 + l * 0.14).toFixed(2)}`,
+    effect: (l) => 1 + l * 0.08,
+    effectLabel: (l) => `×${(1 + l * 0.08).toFixed(2)}`,
   },
   combo: {
     id: "combo",
     name: "Builder's Rhythm",
     desc: "Combos last longer, so you can stack bigger multipliers.",
     icon: "🔗",
-    baseCost: 90,
-    costGrowth: 1.22,
+    baseCost: 120,
+    costGrowth: 1.26,
     maxLevel: 60,
     category: "combo",
-    effect: (l) => COMBO_WINDOW_MS + l * 110,
-    effectLabel: (l) => `${((COMBO_WINDOW_MS + l * 110) / 1000).toFixed(1)}s`,
+    effect: (l) => COMBO_WINDOW_MS + l * 80,
+    effectLabel: (l) => `${((COMBO_WINDOW_MS + l * 80) / 1000).toFixed(1)}s`,
   },
   crit: {
     id: "crit",
     name: "Master Stroke",
     desc: "Chance to land a critical strike that builds 5× more.",
     icon: "🎯",
-    baseCost: 75,
-    costGrowth: 1.24,
+    baseCost: 100,
+    costGrowth: 1.27,
     maxLevel: 70,
     category: "crit",
-    effect: (l) => Math.min(0.75, CRIT_BASE + l * 0.011),
-    effectLabel: (l) => `${(Math.min(0.75, CRIT_BASE + l * 0.011) * 100).toFixed(1)}%`,
+    effect: (l) => Math.min(0.6, CRIT_BASE + l * 0.008),
+    effectLabel: (l) => `${(Math.min(0.6, CRIT_BASE + l * 0.008) * 100).toFixed(1)}%`,
   },
   critPower: {
     id: "critPower",
     name: "Critical Force",
     desc: "Critical strikes build even more.",
     icon: "💥",
-    baseCost: 110,
-    costGrowth: 1.23,
+    baseCost: 150,
+    costGrowth: 1.26,
     maxLevel: 80,
     category: "crit",
-    effect: (l) => 5 + l * 0.5,
-    effectLabel: (l) => `×${(5 + l * 0.5).toFixed(1)}`,
+    effect: (l) => 5 + l * 0.35,
+    effectLabel: (l) => `×${(5 + l * 0.35).toFixed(1)}`,
   },
   autoBuilder: {
     id: "autoBuilder",
     name: "Auto Builder",
     desc: "An apprentice auto-builds the current structure.",
     icon: "🤖",
-    baseCost: 180,
-    costGrowth: 1.27,
+    baseCost: 250,
+    costGrowth: 1.30,
     maxLevel: 150,
     category: "auto",
-    effect: (l) => l * 0.6,
-    effectLabel: (l) => `${(l * 0.6).toFixed(1)}/s`,
+    effect: (l) => l * 0.35,
+    effectLabel: (l) => `${(l * 0.35).toFixed(1)}/s`,
   },
   income: {
     id: "income",
     name: "Town Treasury",
     desc: "Completed buildings produce more coins.",
     icon: "🏛️",
-    baseCost: 60,
-    costGrowth: 1.21,
+    baseCost: 90,
+    costGrowth: 1.25,
     maxLevel: 200,
     category: "income",
-    effect: (l) => 1 + l * 0.12,
-    effectLabel: (l) => `×${(1 + l * 0.12).toFixed(2)}`,
+    effect: (l) => 1 + l * 0.07,
+    effectLabel: (l) => `×${(1 + l * 0.07).toFixed(2)}`,
   },
 };
 
@@ -608,7 +613,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "earn1m", name: "Tycoon", desc: "Earn 1,000,000 lifetime coins.", icon: "💎", reward: 50000, check: (s) => s.totalCoinsEarned >= 1_000_000 },
   { id: "earn1b", name: "Realm Emperor", desc: "Earn 1,000,000,000 lifetime coins.", icon: "👑", reward: 5_000_000, check: (s) => s.totalCoinsEarned >= 1_000_000_000 },
   { id: "daily7", name: "Devoted", desc: "Reach a 7-day streak.", icon: "📅", reward: 10000, check: (s) => s.streak >= 7 },
-  { id: "allBiomes", name: "Explorer", desc: "Reach the Void biome (building 8).", icon: "🗺️", reward: 20000, check: (s) => s.maxBiomeReached >= 7 },
+  { id: "allBiomes", name: "Explorer", desc: "Complete 3 full biome cycles (24 buildings).", icon: "🗺️", reward: 3000, check: (s) => s.builtCount >= 24 },
   { id: "critMaster", name: "Critical Master", desc: "Own level 30+ Master Stroke.", icon: "🎯", reward: 25000, check: (s) => (s.upgrades.crit || 0) >= 30 },
 ];
 

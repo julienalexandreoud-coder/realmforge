@@ -70,3 +70,31 @@ Stage Summary:
 - Infinite: world generates deterministically forever across 8 cycling biomes (16 unique pixel buildings); camera auto-follows + drag-to-pan; prestige (Ascend) resets for permanent Relics (+5% each) → truly infinite progression.
 - Pixel authenticity: hand-drawn ASCII sprite grids, limited per-biome palettes, Press Start 2P + VT323 fonts, crisp pixelated rendering, chiptune Web Audio.
 - Monetization retained: 3 rewarded-ad placements + Relics shop (themes + perm boosts).
+
+---
+Task ID: 19-30 (30-min play→improve loop)
+Agent: main
+Task: Make game much harder + unify dark-navy theme + run 30-min play-improve loop
+
+Work Log (loop iterations):
+- Restyled all 8 biomes to dark navy palettes (sky/ground) matching the panel aesthetic
+- Added themeTint() in GameCanvas: mutes building sprite colors toward navy, preserves glow accents (fire/gold/neon); added navy vignette overlay to unify world with UI
+- Hardened balance: cost 25*1.55^index (very steep), combo 0.03/max2.8x (was 0.05/4x), hammer 0.6/lvl (was 0.9), completeBonus LINEAR 5+idx*0.5 (was exp 3*1.14^idx), tapCoins sqrt scaling (was linear), ascension threshold 20M (was 25k→2M), income growth 1.08 (was 1.12→1.10), relic +3% (was +5%), surge 2.5x/45s (was 3x/60s)
+- Built auto-play harness (7 taps/sec + smart spread upgrade buying) injected via agent-browser, sampling state every 2s
+
+Bugs found & fixed during loop:
+1. CHAIN-COMPLETION EXPLOIT: while(progress>=1) loop awarded multiple exponential completeBonuses per tap → capped to 1 completion/tap, discard overflow (in both tap() and tick())
+2. EXPONENTIAL completeBonus (3*1.14^index) caused runaway to 1e108 coins → made LINEAR (5+index*0.5)
+3. tapCoins scaled linearly with builtCount (188/tap at built=1876) → sqrt scaling
+4. "allBiomes" achievement gave 20,000 coins at built=8 (first void biome cycle) → instant early-game explosion → reduced to 3,000 at built=24
+5. Debug code used `window` which was shadowed by a local `const window = comboWindowMs(s)` → TypeError crashing tap() → removed debug, used globalThis
+6. Stale save keys (v2/v3) caused reading leftover exploded data → bumped to v4
+
+Final measured balance (20s @ 7tps, smart buying): 38 buildings, 9,666 coins, 285/s income, 0 relics eligible. Ascension (20M) ≈ 11+ hours of continuous hard tapping → appropriately HARD (was "passed in 1 minute").
+VLM: dark-navy theme confirmed, "long-term grind game" feel.
+
+Stage Summary:
+- Game is now HARD: first ascension takes hours (not 1 minute).
+- Economy is STABLE: no more exponential explosions (chain-completion + exp-bonus + achievement + linear-tapCoins bugs all fixed).
+- Visual theme unified: dark navy world + pixel buildings tinted to match the sleek dark UI panel (cyan/purple/orange/gold accents).
+- 4 major balance bugs caught only by the automated play loop.
