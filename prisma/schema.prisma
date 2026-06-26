@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Global leaderboard entry for PRISM SMASH
+model LeaderboardEntry {
+  id           String   @id @default(cuid())
+  playerName   String
+  totalShards  BigInt   @default(0) // lifetime shards earned
+  prestige     Int      @default(0) // prestige (reforge) level
+  maxLevel     Int      @default(1) // highest crystal level reached
+  country      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([totalShards])
+}
+
+// Optional anonymous profile stats for daily active tracking / global counters
+model GameStat {
+  id        String   @id
+  value     BigInt   @default(0)
+  updatedAt DateTime @updatedAt
+}
