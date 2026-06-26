@@ -39,6 +39,9 @@ interface RuntimeState {
   lastTapAt: number;
   floatingNumbers: { id: number; x: number; y: number; value: number; crit: boolean; born: number; vy: number }[];
   particles: { x: number; y: number; vx: number; vy: number; life: number; maxLife: number; size: number; color: string }[];
+  // clickable floating bonuses (coins/gems/stars) that appear on screen
+  bonuses: { id: number; x: number; y: number; vx: number; vy: number; type: "coin" | "gem" | "star"; value: number; born: number; expiresAt: number }[];
+  nextBonusAt: number;
   shake: number;
   buildPulse: number; // 0..1 visual pulse on build
   hammerAnim: number; // 0..1 hammer swing
@@ -54,6 +57,7 @@ interface RuntimeState {
   // canvas -> store camera sync
   cameraX: number;
   setCameraX: (x: number) => void;
+  collectBonus: (id: number) => void;
 }
 
 interface GameStore extends SaveState, RuntimeState {
@@ -91,6 +95,8 @@ export const useGame = create<GameStore>((set, get) => ({
   lastTapAt: 0,
   floatingNumbers: [],
   particles: [],
+  bonuses: [],
+  nextBonusAt: 0,
   shake: 0,
   buildPulse: 0,
   hammerAnim: 0,
@@ -105,6 +111,52 @@ export const useGame = create<GameStore>((set, get) => ({
   submittedAt: 0,
   cameraX: 0,
   setCameraX: (x) => set({ cameraX: x }),
+
+  collectBonus: (id) => {
+    const s = get();
+    const bonus = s.bonuses.find((b) => b.id === id);
+    if (!bonus) return;
+    const audio = getAudio();
+    audio.init();
+    audio.play("coin");
+    const gain = bonus.value;
+    // particle burst at bonus location
+    const parts = [...s.particles];
+    const color = bonus.type === "star" ? "#fbbf24" : bonus.type === "gem" ? "#c084fc" : "#fbbf24";
+    for (let i = 0; i < 16; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const sp = 1.5 + Math.random() * 3;
+      parts.push({
+        x: bonus.x,
+        y: bonus.y,
+        vx: Math.cos(ang) * sp,
+        vy: Math.sin(ang) * sp - 1.5,
+        life: 0,
+        maxLife: 500 + Math.random() * 300,
+        size: 2 + Math.random() * 2,
+        color,
+      });
+    }
+    // floating number
+    const floats = [...s.floatingNumbers, {
+      id: floatId++,
+      x: bonus.x,
+      y: bonus.y,
+      value: gain,
+      crit: bonus.type !== "coin",
+      born: Date.now(),
+      vy: -0.8,
+    }];
+    set({
+      bonuses: s.bonuses.filter((b) => b.id !== id),
+      coins: s.coins + gain,
+      totalCoinsEarned: s.totalCoinsEarned + gain,
+      runCoinsEarned: s.runCoinsEarned + gain,
+      particles: parts.slice(-360),
+      floatingNumbers: floats.slice(-24),
+    });
+    get()._save();
+  },
 
   init: () => {
     clearOldSave();
@@ -123,10 +175,21 @@ export const useGame = create<GameStore>((set, get) => ({
       pendingOffline: off.coins > 0 ? off : null,
       showAd: off.coins > 0 ? "offline" : null,
       cameraX: camX,
+      nextBonusAt: now + 4000, // first bonus appears 4s after load
+      bonuses: [],
     });
     if (get().musicOn) {
       audio.init();
       audio.setMusicEnabled(true);
+    }
+    // ---- persistent game loop (setInterval, NOT tied to React/RAF) ----
+    // This guarantees the auto-builder & passive income keep ticking even
+    // when the tab is backgrounded or React re-renders. Guarded so we only
+    // ever create one interval.
+    if (typeof window !== "undefined" && !(window as any).__realmforgeLoop) {
+      (window as any).__realmforgeLoop = setInterval(() => {
+        useGame.getState().tick(Date.now());
+      }, 100);
     }
   },
 
@@ -439,7 +502,7 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   hardReset: () => {
-    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v4");
+    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v5");
     const base = defaultSave();
     set({
       ...base,
@@ -522,7 +585,50 @@ export const useGame = create<GameStore>((set, get) => ({
       .map((f) => ({ ...f, y: f.y + f.vy, vy: f.vy * 0.97 }))
       .filter((f) => now - f.born < 900);
 
+    // ---- spawn & age clickable bonuses ----
+    const spawnBonus = () => {
+      const w = typeof window !== "undefined" ? window.innerWidth : 800;
+      const h = typeof window !== "undefined" ? window.innerHeight : 600;
+      // spawn in the upper-middle area of the screen
+      const x = 60 + Math.random() * Math.max(120, w - 120);
+      const y = 80 + Math.random() * Math.max(100, h * 0.5);
+      const roll = Math.random();
+      const type: "coin" | "gem" | "star" = roll < 0.65 ? "coin" : roll < 0.92 ? "gem" : "star";
+      // value scales with built count + a base
+      const baseVal = 5 + Math.sqrt(s.builtCount + 1) * 8;
+      const value = Math.floor(
+        (type === "coin" ? baseVal : type === "gem" ? baseVal * 5 : baseVal * 25) * (1 + s.relics * 0.03)
+      );
+      const id = floatId++;
+      const lifeMs = type === "star" ? 5000 : type === "gem" ? 6500 : 8000;
+      const newBonuses = [...s.bonuses, {
+        id, x, y, vx: (Math.random() - 0.5) * 0.4, vy: -0.15 - Math.random() * 0.2,
+        type, value, born: now, expiresAt: now + lifeMs,
+      }].slice(-5);
+      updates.bonuses = newBonuses;
+    };
+    // spawn on schedule
+    if (now >= s.nextBonusAt) {
+      spawnBonus();
+      // next spawn in 6-14s
+      updates.nextBonusAt = now + 6000 + Math.random() * 8000;
+    }
+    // age existing bonuses (drift + expire)
+    if (s.bonuses.length > 0) {
+      const aged = updates.bonuses ?? s.bonuses;
+      updates.bonuses = aged
+        .map((b) => ({ ...b, x: b.x + b.vx, y: b.y + b.vy, vy: b.vy * 0.99 }))
+        .filter((b) => now < b.expiresAt);
+    }
+
     if (Object.keys(updates).length > 0) set(updates as any);
+
+    // persist to localStorage every ~2s (not every 100ms tick)
+    const lastSave = (get() as any).__lastSave || 0;
+    if (now - lastSave > 2000) {
+      set({ __lastSave: now } as any);
+      get()._save();
+    }
 
     if (s.surgeEndsAt > 0 && now > s.surgeEndsAt && now - s.surgeEndsAt < 200) {
       get().pushToast({ title: "Golden Age ended", icon: "⚡" });

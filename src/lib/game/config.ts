@@ -332,14 +332,14 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   autoBuilder: {
     id: "autoBuilder",
     name: "Auto Builder",
-    desc: "An apprentice auto-builds the current structure.",
+    desc: "An apprentice auto-builds the current structure (% per second).",
     icon: "🤖",
     baseCost: 250,
     costGrowth: 1.30,
     maxLevel: 150,
     category: "auto",
-    effect: (l) => l * 0.35,
-    effectLabel: (l) => `${(l * 0.35).toFixed(1)}/s`,
+    effect: (l) => l * 0.03,
+    effectLabel: (l) => `${(l * 0.03 * 100).toFixed(0)}%/s`,
   },
   income: {
     id: "income",

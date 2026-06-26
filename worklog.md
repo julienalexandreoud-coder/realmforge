@@ -115,3 +115,20 @@ Work Log:
 
 Stage Summary:
 - Buildings are now tall city towers with lit windows forming a continuous wall-to-wall skyline, plus a distant parallax skyline backdrop for depth. The world reads clearly as a pixel-art CITY at night, matching the dark-navy UI theme.
+
+---
+Task ID: 32
+Agent: main
+Task: Fix broken auto-builder + add clickable coin bonuses
+
+Work Log:
+- ROOT CAUSE of broken auto-builder: the game tick was tied to the canvas's requestAnimationFrame loop, which stops when the tab is backgrounded or the canvas isn't actively rendering. Moved the tick to a persistent setInterval (100ms) in the store's init(), guarded by a window flag so only one interval ever exists. Removed the page.tsx duplicate interval (it was getting torn down by HMR).
+- Second bug: the periodic localStorage save in tick used `(get()).__lastSave` which started as `undefined` → `now - undefined = NaN` → `NaN > 2000 = false` → save never ran. Fixed with `|| 0` default + proper `set({__lastSave})`.
+- Auto-builder formula fix: was `l * 0.35` (flat fraction/sec → ~3s per building regardless of cost, inconsistent with steep 1.55^index cost curve). Changed to `l * 0.03` (3%/level/sec of the current building) → scales naturally with cost. Level 1 = 3%/s (~33s), level 5 = 15%/s (~7s), level 20 = 60%/s (~1.7s).
+- Added clickable coin bonuses: floating 🪙 (65%, small) / 💎 (27%, 5× value) / ⭐ (8%, 25× value) icons spawn every 6-14s, drift upward, expire after 5-8s. Clicking gives bonus coins (scales with city size sqrt + relic mult), plays coin SFX, spawns particle burst + floating number. Rendered as DOM overlay (BonusOverlay.tsx) with pulsing ring + glow halo + value label.
+- Bumped save to v5 (auto-builder formula changed).
+- Verified: auto-builder level 2 → coins grew 1033→1656, buildings 7→9, progress 0.28→0.95 in 8s idle. Bonus click → +2079 coins (23570→25649).
+
+Stage Summary:
+- Auto-builder now works persistently (setInterval game loop, independent of canvas RAF). Percentage-based scaling makes it always useful.
+- Clickable coin/gem/star bonuses appear on screen every 6-14s — tap them for bonus coins. Adds active engagement between building taps.

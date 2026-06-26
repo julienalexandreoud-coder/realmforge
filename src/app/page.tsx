@@ -12,6 +12,7 @@ import Achievements from "@/components/game/Achievements";
 import NameDialog from "@/components/game/NameDialog";
 import RewardedAdModal from "@/components/game/RewardedAdModal";
 import Toasts from "@/components/game/Toasts";
+import BonusOverlay from "@/components/game/BonusOverlay";
 import { getAudio } from "@/lib/game/audio";
 import { canAscend, ascensionRelicsGained } from "@/lib/game/engine";
 import { Zap, ShoppingCart, Infinity as Inf, Trophy, Medal } from "lucide-react";
@@ -107,6 +108,7 @@ export default function Home() {
 
       <NameDialog />
       <RewardedAdModal key={showAd ?? "none"} />
+      <BonusOverlay />
       <Toasts />
     </div>
   );
