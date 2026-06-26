@@ -1,24 +1,24 @@
 "use client";
 import { useGame } from "@/lib/store/gameStore";
 import { MAX_DAILY_STREAK } from "@/lib/game/config";
-import { formatNumber, prismMultiplier } from "@/lib/game/engine";
+import { formatNumber, relicMultiplier } from "@/lib/game/engine";
 import { Flame, Gift } from "lucide-react";
 import { todayKey } from "@/lib/game/save";
 
-const REWARDS = [200, 400, 800, 1500, 3000, 6000, 12000];
+const REWARDS = [200, 500, 1200, 2500, 5000, 10000, 25000];
 
 export default function DailyStreak() {
   const streak = useGame((s) => s.streak);
   const lastClaimDay = useGame((s) => s.lastClaimDay);
   const claim = useGame((s) => s.claimDaily);
-  const prisms = useGame((s) => s.prisms);
+  const relics = useGame((s) => s.relics);
 
   const claimedToday = lastClaimDay === todayKey();
-  const mult = prismMultiplier({ prisms } as any);
+  const mult = relicMultiplier({ relics } as any);
 
   return (
-    <div className="flex items-center gap-2 sm:gap-3">
-      <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex items-center gap-1">
         {Array.from({ length: MAX_DAILY_STREAK }).map((_, i) => {
           const day = i + 1;
           const reached = streak >= day;
@@ -26,16 +26,16 @@ export default function DailyStreak() {
           return (
             <div
               key={i}
-              className={`relative w-7 h-7 sm:w-8 sm:h-8 grid place-items-center rounded-lg text-[10px] font-bold transition ${
+              className={`relative w-6 h-6 sm:w-7 sm:h-7 grid place-items-center border-2 transition ${
                 reached
-                  ? "bg-gradient-to-br from-orange-500 to-rose-500 text-white shadow-md shadow-orange-500/30"
+                  ? "border-orange-400 bg-orange-600 text-white"
                   : isToday
-                  ? "bg-amber-400/20 border border-amber-400 text-amber-300 animate-pulse"
-                  : "bg-slate-800/60 text-slate-600"
+                  ? "border-amber-400 bg-amber-950/60 text-amber-300 animate-pulse"
+                  : "border-slate-700 bg-slate-950 text-slate-600"
               }`}
-              title={`Day ${day}: ${formatNumber(REWARDS[i] * mult)} shards`}
+              title={`Day ${day}: ${formatNumber(REWARDS[i] * mult)} coins`}
             >
-              {reached ? <Flame className="w-3.5 h-3.5" /> : day}
+              {reached ? <Flame className="w-3 h-3" /> : <span className="font-pixel text-[8px]">{day}</span>}
             </div>
           );
         })}
@@ -43,14 +43,14 @@ export default function DailyStreak() {
       <button
         onClick={claim}
         disabled={claimedToday}
-        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+        className={`px-2.5 py-1.5 border-2 font-pixel text-[8px] transition flex items-center gap-1.5 ${
           claimedToday
-            ? "bg-slate-800 text-slate-500 cursor-default"
-            : "bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:scale-105 active:scale-95 shadow-md shadow-orange-500/30"
+            ? "border-slate-800 bg-slate-950 text-slate-600 cursor-default"
+            : "border-orange-400 bg-orange-700 text-white hover:brightness-110 active:translate-y-0.5"
         }`}
       >
-        <Gift className="w-3.5 h-3.5" />
-        {claimedToday ? "Claimed" : streak === 0 ? "Claim Day 1" : `Claim Day ${Math.min(streak + 1, 7)}`}
+        <Gift className="w-3 h-3" />
+        {claimedToday ? "DONE" : streak === 0 ? "DAY 1" : `DAY ${Math.min(streak + 1, 7)}`}
       </button>
     </div>
   );

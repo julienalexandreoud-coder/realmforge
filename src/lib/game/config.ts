@@ -1,198 +1,641 @@
-// PRISM SMASH — game balance, upgrades, achievements, shop, skins
+// REALMFORGE — pixel-art buildings, biomes, palettes, balance
 import type {
+  BuildingDef,
+  BiomeDef,
+  BiomeId,
   UpgradeDef,
   UpgradeId,
   AchievementDef,
-  ShopItemDef,
-  SkinId,
+  ThemeId,
   SaveState,
 } from "./types";
 
-// ---------- Balance constants ----------
-export const COMBO_WINDOW_MS = 1100; // time to keep combo alive between taps
-export const COMBO_MAX = 50; // combo cap (multiplier scales off this)
-export const CRIT_BASE_CHANCE = 0.03; // base crit chance even without upgrades
-export const CRYSTAL_BASE_HP = 12;
-export const CRYSTAL_HP_GROWTH = 1.55; // hp multiplier per level
-export const CRYSTAL_SHARD_BASE = 8; // shards dropped when a level-N crystal is fully smashed (per full crystal)
-export const PRESTIGE_THRESHOLD = 50000; // run shards needed to prestige once
-export const OFFLINE_CAP_MS = 8 * 60 * 60 * 1000; // 8h offline earnings cap
-export const SURGE_DURATION_MS = 60 * 1000; // 60s power surge
-export const SURGE_MULT = 3; // 3x during surge
+// ---------- Balance ----------
+export const COMBO_WINDOW_MS = 1200;
+export const COMBO_MAX = 75;
+export const CRIT_BASE = 0.04;
+export const SURGE_DURATION_MS = 60_000;
+export const SURGE_MULT = 3;
+export const ASCENSION_THRESHOLD = 25_000;
+export const OFFLINE_CAP_MS = 8 * 3600 * 1000;
+export const PLOT_W = 64; // world px per plot
+export const GROUND_H = 40;
 export const MAX_DAILY_STREAK = 7;
 
-// ---------- Skins ----------
-export interface SkinDef {
-  id: SkinId;
-  name: string;
-  core: string; // center color
-  glow: string; // outer glow color
-  facet: string; // facet highlight
-  cost: number; // prisms (0 = default free)
+// income/coin scaling per building index (era)
+export function buildingIncomeAt(index: number): number {
+  return 2 * Math.pow(1.18, index);
+}
+export function buildingCompleteBonusAt(index: number): number {
+  return 15 * Math.pow(1.22, index);
 }
 
-export const SKINS: Record<SkinId, SkinDef> = {
-  default: { id: "default", name: "Aurora", core: "#7dd3fc", glow: "#38bdf8", facet: "#e0f2fe", cost: 0 },
-  ember: { id: "ember", name: "Ember", core: "#fb923c", glow: "#f97316", facet: "#fed7aa", cost: 25 },
-  toxic: { id: "toxic", name: "Toxic", core: "#a3e635", glow: "#84cc16", facet: "#ecfccb", cost: 40 },
-  cosmic: { id: "cosmic", name: "Cosmic", core: "#c084fc", glow: "#a855f7", facet: "#f3e8ff", cost: 60 },
-  rainbow: { id: "rainbow", name: "Prism", core: "rainbow", glow: "rainbow", facet: "#ffffff", cost: 120 },
+// ---------- Biomes (cycle infinitely) ----------
+export const BIOMES: BiomeDef[] = [
+  {
+    id: "plains",
+    name: "Green Plains",
+    sky: ["#7ec0ee", "#bfe3f5", "#e8f6ff"],
+    ground: "#6ab04c",
+    groundDark: "#4a8a36",
+    accent: "#7dd3fc",
+    decoration: ["..T..", ".TTT.", "TTTTT", "..|.."],
+    decPalette: { T: "#2f7d32", "|:": "#5d3a1a" },
+    buildings: ["cottage", "windmill", "barn"],
+  },
+  {
+    id: "forest",
+    name: "Deep Forest",
+    sky: ["#5a8f5a", "#8fbf6f", "#cfe8a8"],
+    ground: "#3f6e2f",
+    groundDark: "#2a4d20",
+    accent: "#84cc16",
+    decoration: ["..F..", ".FFF.", "FFFFF", "FFFFF", "..#.."],
+    decPalette: { F: "#1f5e1f", "#": "#3a2410" },
+    buildings: ["treehouse", "lodge"],
+  },
+  {
+    id: "desert",
+    name: "Sun Dunes",
+    sky: ["#f6c453", "#f9d976", "#fde8a6"],
+    ground: "#e0a83e",
+    groundDark: "#b9821f",
+    accent: "#fbbf24",
+    decoration: ["..c..", ".ccc.", "ccccc", "..|.."],
+    decPalette: { c: "#3f7a2a", "|:": "#7a5a2a" },
+    buildings: ["pyramid", "oasis"],
+  },
+  {
+    id: "snow",
+    name: "Frostpeak",
+    sky: ["#9ec7e0", "#cfe4f0", "#eef6fb"],
+    ground: "#e8f0f5",
+    groundDark: "#b8cdd9",
+    accent: "#67e8f9",
+    decoration: ["..*..", ".*P*.", "*PPP*", "..#.."],
+    decPalette: { P: "#2f5d7a", "*": "#ffffff", "#": "#5a4a3a" },
+    buildings: ["igloo", "icecastle"],
+  },
+  {
+    id: "volcano",
+    name: "Emberlands",
+    sky: ["#3a1414", "#7a2424", "#c0452a"],
+    ground: "#3a2424",
+    groundDark: "#1f1414",
+    accent: "#fb7185",
+    decoration: ["..R..", ".RRR.", "RRRRR", "..^.."],
+    decPalette: { R: "#1a1a1a", "^": "#ff6a00" },
+    buildings: ["forge", "obsidian"],
+  },
+  {
+    id: "sky",
+    name: "Sky Reach",
+    sky: ["#5fa8d3", "#9fd0f0", "#dff0fb"],
+    ground: "#cfe8ff",
+    groundDark: "#9fc8e8",
+    accent: "#bae6fd",
+    decoration: ["ooooo", ".....", ".....", "ooooo"],
+    decPalette: { o: "#ffffff" },
+    buildings: ["cloudhall", "balloon"],
+  },
+  {
+    id: "space",
+    name: "Star Void",
+    sky: ["#0a0a2a", "#1a1a4a", "#2a2a6a"],
+    ground: "#2a2a4a",
+    groundDark: "#1a1a3a",
+    accent: "#a855f7",
+    decoration: ["*.*.*", ".....", ".*.*.", "....."],
+    decPalette: { "*": "#ffffff", ".": "transparent" },
+    buildings: ["rocket", "dome"],
+  },
+  {
+    id: "void",
+    name: "Crystal Rift",
+    sky: ["#1a0a2a", "#3a1a5a", "#6a2a8a"],
+    ground: "#2a1a3a",
+    groundDark: "#1a0a2a",
+    accent: "#e879f9",
+    decoration: ["..V..", ".VVV.", "VVVVV", "..V.."],
+    decPalette: { V: "#c026d3" },
+    buildings: ["crystaltower", "riftgate"],
+  },
+];
+
+export function biomeForIndex(index: number): BiomeDef {
+  return BIOMES[index % BIOMES.length];
+}
+
+// deterministic pseudo-random per plot index
+export function seededRand(index: number, salt: number): number {
+  let x = (index + 1) * 2654435761 + salt * 40503;
+  x = Math.imul(x ^ (x >>> 15), 2246822507);
+  x = Math.imul(x ^ (x >>> 13), 3266489909);
+  x ^= x >>> 16;
+  return ((x >>> 0) % 100000) / 100000;
+}
+
+export function buildingForPlot(index: number): BuildingDef {
+  const biome = biomeForIndex(index);
+  const pick = Math.floor(seededRand(index, 7) * biome.buildings.length);
+  return BUILDINGS[biome.buildings[pick]];
+}
+
+// ---------- Buildings (hand-crafted pixel sprites) ----------
+export const BUILDINGS: Record<string, BuildingDef> = {
+  // ---- Plains ----
+  cottage: {
+    id: "cottage",
+    name: "Cottage",
+    biome: "plains",
+    w: 9,
+    h: 9,
+    baseIncome: 2,
+    palette: { R: "#b5443a", r: "#8a2f28", W: "#e8d5a8", w: "#c4ab7e", D: "#6b4423", W2: "#4a8ad9", g: "#ffffff" },
+    sprite: [
+      "....g....",
+      "...RRR...",
+      "..RRRRR..",
+      ".RRRRRRR.",
+      "WWWWWWWWW",
+      "WWDWWWWW2",
+      "WWDWWWWW2",
+      "WWWWWWWWW",
+      "WWWWWWWWW",
+    ],
+  },
+  windmill: {
+    id: "windmill",
+    name: "Windmill",
+    biome: "plains",
+    w: 9,
+    h: 10,
+    baseIncome: 3,
+    palette: { W: "#e8d5a8", w: "#c4ab7e", S: "#6b4423", M: "#5a3a2a", B: "#d9c08a" },
+    sprite: [
+      "....X....",
+      "...X.X...",
+      "..X...X..",
+      ".X.MMM.X.",
+      "...MSM...",
+      "...MSM...",
+      "..WMXMW..",
+      "..WMMM W.",
+      "..WMMMW..",
+      "..WWWWW..",
+    ].map((r) => r.replace(/X/g, "B")),
+  },
+  barn: {
+    id: "barn",
+    name: "Barn",
+    biome: "plains",
+    w: 10,
+    h: 8,
+    baseIncome: 2.5,
+    palette: { R: "#a83232", r: "#7a1f1f", W: "#e8d5a8", D: "#3a2010", B: "#5a3a2a" },
+    sprite: [
+      "...RRRR...",
+      "..RRRRRR..",
+      ".RRRRRRRR.",
+      "RRRRRRRRRR",
+      "RWWRDDRRRR",
+      "RWWRDDRRRR",
+      "RWWRDDRRRR",
+      "RRRRRRRRRR",
+    ],
+  },
+  // ---- Forest ----
+  treehouse: {
+    id: "treehouse",
+    name: "Treehouse",
+    biome: "forest",
+    w: 9,
+    h: 10,
+    baseIncome: 4,
+    palette: { T: "#1f5e1f", t: "#144014", W: "#a87f4a", D: "#5a3a1a", g: "#ffffff" },
+    sprite: [
+      "....g....",
+      "...TTT...",
+      "..TTTTT..",
+      ".TTTTTTT.",
+      "TTTTTTTTT",
+      "T.WWDWW T",
+      "T.WWDWW T",
+      "TtWWWWWt T".replace(" ", "."),
+      ".tWWTWWt.",
+      "..tWWt...",
+    ],
+  },
+  lodge: {
+    id: "lodge",
+    name: "Lodge",
+    biome: "forest",
+    w: 10,
+    h: 8,
+    baseIncome: 4.5,
+    palette: { W: "#7a5a3a", w: "#5a3f24", R: "#3a5a2a", D: "#2a1a0a", L: "#a87f4a" },
+    sprite: [
+      "...RRRR...",
+      "..RRRRRR..",
+      ".RRRRRRRR.",
+      "WWWWWWWWWW",
+      "WLWDWWWLWW",
+      "WLWDWWWLWW",
+      "WWWWWWWWWW",
+      "wwwwwwwwww",
+    ],
+  },
+  // ---- Desert ----
+  pyramid: {
+    id: "pyramid",
+    name: "Pyramid",
+    biome: "desert",
+    w: 9,
+    h: 7,
+    baseIncome: 5,
+    palette: { S: "#d4a64a", s: "#b8862a", D: "#5a3a1a", g: "#ffd700" },
+    sprite: [
+      "....g....",
+      "...SSS...",
+      "..SSSSS..",
+      ".SSSSSSS.",
+      "SSSSSSSSS",
+      "SsSsSsSsS",
+      "SSSSSSSSS",
+    ],
+  },
+  oasis: {
+    id: "oasis",
+    name: "Oasis",
+    biome: "desert",
+    w: 9,
+    h: 6,
+    baseIncome: 4,
+    palette: { W: "#3aa0d9", w: "#2a7fb0", P: "#3f7a2a", S: "#e0a83e" },
+    sprite: [
+      "..PPP....",
+      ".PWWWP..",
+      "PWWWWWP.",
+      "PWWWWWP.",
+      "SSSSSSSS",
+      "SsSsSsSs",
+    ].map((r) => r.padEnd(9, ".")),
+  },
+  // ---- Snow ----
+  igloo: {
+    id: "igloo",
+    name: "Igloo",
+    biome: "snow",
+    w: 9,
+    h: 6,
+    baseIncome: 6,
+    palette: { I: "#dfeef7", i: "#a8c8d8", D: "#3a5a7a", S: "#ffffff" },
+    sprite: [
+      "..SSSSS..",
+      ".IIIIIII.",
+      "IIIIIIIII",
+      "IIIDIIIII",
+      "IIIDIIIII",
+      "iiiiiiiii",
+    ],
+  },
+  icecastle: {
+    id: "icecastle",
+    name: "Ice Castle",
+    biome: "snow",
+    w: 10,
+    h: 9,
+    baseIncome: 7,
+    palette: { I: "#bfe3f5", i: "#7fb8d8", D: "#3a5a7a", S: "#ffffff", g: "#e8f6ff" },
+    sprite: [
+      "I..I..I..I",
+      "Ig.Ig.Ig.I".replace(/g/g, "I"),
+      "IIIIIIIIII",
+      "IIiIIiIIiI",
+      "IIIDDIIDII",
+      "IIIDDIIDII",
+      "IIIIIIIIII",
+      "iiiiiiiiii",
+      "..........",
+    ],
+  },
+  // ---- Volcano ----
+  forge: {
+    id: "forge",
+    name: "Forge",
+    biome: "volcano",
+    w: 9,
+    h: 8,
+    baseIncome: 9,
+    palette: { B: "#3a2424", b: "#1f1414", M: "#5a2a2a", F: "#ff6a00", D: "#2a1010" },
+    sprite: [
+      "...F.F...",
+      "..MMMMM..",
+      ".BBBBBBB.",
+      "BBBDDDBBB",
+      "BBBDFDBBB",
+      "BBBDDDBBB",
+      "BBBBBBBBB",
+      "bbbbbbbbb",
+    ],
+  },
+  obsidian: {
+    id: "obsidian",
+    name: "Obsidian Spire",
+    biome: "volcano",
+    w: 9,
+    h: 10,
+    baseIncome: 10,
+    palette: { O: "#1a1a1a", o: "#0a0a0a", F: "#ff3a00", g: "#ffaa00" },
+    sprite: [
+      "....g....",
+      "...OOO...",
+      "..OOOOO..",
+      ".OOFOOO..",
+      "OOOFOOOO.",
+      "OOOOOOOO.",
+      "oOOOOOOo.",
+      "ooOOOOoo.",
+      ".ooOOoo..",
+      "..oooo...",
+    ],
+  },
+  // ---- Sky ----
+  cloudhall: {
+    id: "cloudhall",
+    name: "Cloud Hall",
+    biome: "sky",
+    w: 10,
+    h: 7,
+    baseIncome: 13,
+    palette: { C: "#ffffff", c: "#dfeeff", W: "#bfe0ff", g: "#ffe06a" },
+    sprite: [
+      "..g.....g.",
+      ".CCWCCWCC.",
+      "CCCWWWWCCC",
+      "CCCCCCCCCC",
+      "CcCCCCCCcC",
+      "CCCCCCCCCC",
+      ".cc.cccc.c",
+    ],
+  },
+  balloon: {
+    id: "balloon",
+    name: "Sky Balloon",
+    biome: "sky",
+    w: 9,
+    h: 9,
+    baseIncome: 12,
+    palette: { B: "#e84a4a", b: "#a82a2a", R: "#5a3a2a", W: "#e8d5a8", g: "#ffe06a" },
+    sprite: [
+      "...g.g...",
+      "..BBBBB..",
+      ".BBBBBBB.",
+      "BBBbBbBBB",
+      "BBBBBBBBB",
+      ".bB.B.Bb.",
+      "...RRR...",
+      "..WWWWW..",
+      "..WWWWW..",
+    ],
+  },
+  // ---- Space ----
+  rocket: {
+    id: "rocket",
+    name: "Rocket",
+    biome: "space",
+    w: 9,
+    h: 11,
+    baseIncome: 18,
+    palette: { W: "#e8e8e8", w: "#9a9a9a", R: "#d93232", F: "#ff7a00", g: "#ffe06a", W2: "#3a6ad9" },
+    sprite: [
+      "....g....",
+      "...WWW...",
+      "..WWWWW..",
+      ".WWWWWWW.",
+      "WWWWWWWWW",
+      "WWWwWwWWW",
+      "WWWWWWWWW",
+      "WWRWWWRWW",
+      "WWWWWWWWW",
+      ".F.F.F.F.",
+      ".F.F.F.F.",
+    ],
+  },
+  dome: {
+    id: "dome",
+    name: "Biodome",
+    biome: "space",
+    w: 10,
+    h: 7,
+    baseIncome: 16,
+    palette: { G: "#5fd9a0", g: "#3aa070", W: "#dfeeff", S: "#3a6ad9", P: "#2f7d32" },
+    sprite: [
+      "..WWWWW..",
+      ".WGGGGGW.",
+      "WGGgGgGGW",
+      "WGPGGGPGW",
+      "WGGGGGGGW",
+      "SSSSSSSSS",
+      "SSSSSSSSS".padEnd(10, "S"),
+    ],
+  },
+  // ---- Void ----
+  crystaltower: {
+    id: "crystaltower",
+    name: "Crystal Tower",
+    biome: "void",
+    w: 9,
+    h: 11,
+    baseIncome: 24,
+    palette: { C: "#c026d3", c: "#7a189a", g: "#f0abfc", P: "#e879f9", W: "#2a1a3a" },
+    sprite: [
+      "....g....",
+      "...CgC...",
+      "..CCPCC..",
+      ".CCCPPCC.",
+      "CCCPPPCCc",
+      "CCCPPPCCc",
+      "CCCPPPCCc",
+      "CCCPPPCCc",
+      "WCCCCCCCW",
+      "WWWCWWCWW",
+      "WWWWWWWWW",
+    ],
+  },
+  riftgate: {
+    id: "riftgate",
+    name: "Rift Gate",
+    biome: "void",
+    w: 9,
+    h: 9,
+    baseIncome: 22,
+    palette: { P: "#a855f7", p: "#7a189a", G: "#f0abfc", S: "#3a1a5a", g: "#ffffff" },
+    sprite: [
+      "....g....",
+      "...PGP...",
+      "..PGGGP..",
+      ".PGGGGGP.",
+      "PGGgggGGP",
+      "PGGgggGGP",
+      "PGGgggGGP",
+      ".PGGGGGP.",
+      "..SSSSS..",
+    ],
+  },
+};
+
+// ---------- Themes (palette swaps) ----------
+export const THEMES: Record<ThemeId, { id: ThemeId; name: string; cost: number; tint: string }> = {
+  classic: { id: "classic", name: "Classic", cost: 0, tint: "#7dd3fc" },
+  dawn: { id: "dawn", name: "Dawn", cost: 15, tint: "#fb923c" },
+  dusk: { id: "dusk", name: "Dusk", cost: 25, tint: "#f472b6" },
+  midnight: { id: "midnight", name: "Midnight", cost: 40, tint: "#818cf8" },
+  neon: { id: "neon", name: "Neon", cost: 80, tint: "#22d3ee" },
 };
 
 // ---------- Upgrades ----------
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
-  tapPower: {
-    id: "tapPower",
-    name: "Tap Power",
-    desc: "Each tap deals more damage to the crystal.",
-    icon: "⛏️",
-    baseCost: 15,
-    costGrowth: 1.18,
+  hammer: {
+    id: "hammer",
+    name: "Hammer Power",
+    desc: "Each tap builds more of the current structure.",
+    icon: "🔨",
+    baseCost: 12,
+    costGrowth: 1.17,
+    maxLevel: 250,
+    category: "tap",
+    effect: (l) => 1 + l * 1.4,
+    effectLabel: (l) => `+${(1 + l * 1.4).toFixed(1)} build`,
+  },
+  coins: {
+    id: "coins",
+    name: "Coin Polish",
+    desc: "Earn more coins from every tap and completion.",
+    icon: "🪙",
+    baseCost: 40,
+    costGrowth: 1.2,
     maxLevel: 200,
     category: "tap",
-    effect: (lvl) => 1 + lvl * 1.5, // base tap damage
-    effectLabel: (lvl) => `+${(lvl * 1.5).toFixed(1)} dmg`,
+    effect: (l) => 1 + l * 0.14,
+    effectLabel: (l) => `×${(1 + l * 0.14).toFixed(2)}`,
   },
-  shardValue: {
-    id: "shardValue",
-    name: "Shard Polish",
-    desc: "Shards you earn are worth more.",
-    icon: "💎",
-    baseCost: 50,
+  combo: {
+    id: "combo",
+    name: "Builder's Rhythm",
+    desc: "Combos last longer, so you can stack bigger multipliers.",
+    icon: "🔗",
+    baseCost: 90,
     costGrowth: 1.22,
-    maxLevel: 150,
-    category: "value",
-    effect: (lvl) => 1 + lvl * 0.15, // multiplier to all shard gains
-    effectLabel: (lvl) => `×${(1 + lvl * 0.15).toFixed(2)}`,
-  },
-  critChance: {
-    id: "critChance",
-    name: "Critical Edge",
-    desc: "Chance to land a critical smash (huge burst).",
-    icon: "🎯",
-    baseCost: 80,
-    costGrowth: 1.25,
     maxLevel: 60,
+    category: "combo",
+    effect: (l) => COMBO_WINDOW_MS + l * 110,
+    effectLabel: (l) => `${((COMBO_WINDOW_MS + l * 110) / 1000).toFixed(1)}s`,
+  },
+  crit: {
+    id: "crit",
+    name: "Master Stroke",
+    desc: "Chance to land a critical strike that builds 5× more.",
+    icon: "🎯",
+    baseCost: 75,
+    costGrowth: 1.24,
+    maxLevel: 70,
     category: "crit",
-    effect: (lvl) => Math.min(0.75, CRIT_BASE_CHANCE + lvl * 0.012),
-    effectLabel: (lvl) => `${(Math.min(0.75, CRIT_BASE_CHANCE + lvl * 0.012) * 100).toFixed(1)}%`,
+    effect: (l) => Math.min(0.75, CRIT_BASE + l * 0.011),
+    effectLabel: (l) => `${(Math.min(0.75, CRIT_BASE + l * 0.011) * 100).toFixed(1)}%`,
   },
   critPower: {
     id: "critPower",
-    name: "Critical Power",
-    desc: "Critical smashes deal more damage.",
+    name: "Critical Force",
+    desc: "Critical strikes build even more.",
     icon: "💥",
-    baseCost: 120,
-    costGrowth: 1.24,
+    baseCost: 110,
+    costGrowth: 1.23,
     maxLevel: 80,
     category: "crit",
-    effect: (lvl) => 5 + lvl * 0.6, // crit multiplier
-    effectLabel: (lvl) => `×${(5 + lvl * 0.6).toFixed(1)}`,
+    effect: (l) => 5 + l * 0.5,
+    effectLabel: (l) => `×${(5 + l * 0.5).toFixed(1)}`,
   },
-  comboDuration: {
-    id: "comboDuration",
-    name: "Combo Flow",
-    desc: "Combos decay slower, letting you stack higher multipliers.",
-    icon: "🔗",
-    baseCost: 100,
-    costGrowth: 1.23,
-    maxLevel: 50,
-    category: "combo",
-    effect: (lvl) => COMBO_WINDOW_MS + lvl * 120,
-    effectLabel: (lvl) => `${((COMBO_WINDOW_MS + lvl * 120) / 1000).toFixed(1)}s`,
-  },
-  autoTapper: {
-    id: "autoTapper",
-    name: "Auto Drill",
-    desc: "A drill auto-taps the crystal for you.",
+  autoBuilder: {
+    id: "autoBuilder",
+    name: "Auto Builder",
+    desc: "An apprentice auto-builds the current structure.",
     icon: "🤖",
-    baseCost: 200,
-    costGrowth: 1.28,
-    maxLevel: 120,
+    baseCost: 180,
+    costGrowth: 1.27,
+    maxLevel: 150,
     category: "auto",
-    effect: (lvl) => lvl * 0.8, // damage per auto tick
-    effectLabel: (lvl) => `${(lvl * 0.8).toFixed(1)} dmg/tick`,
+    effect: (l) => l * 0.6,
+    effectLabel: (l) => `${(l * 0.6).toFixed(1)}/s`,
   },
-  autoSpeed: {
-    id: "autoSpeed",
-    name: "Drill Speed",
-    desc: "Auto Drill fires faster.",
-    icon: "⚙️",
-    baseCost: 350,
-    costGrowth: 1.3,
-    maxLevel: 40,
-    category: "auto",
-    effect: (lvl) => 1 + lvl * 0.15, // ticks per second multiplier
-    effectLabel: (lvl) => `×${(1 + lvl * 0.15).toFixed(2)}`,
+  income: {
+    id: "income",
+    name: "Town Treasury",
+    desc: "Completed buildings produce more coins.",
+    icon: "🏛️",
+    baseCost: 60,
+    costGrowth: 1.21,
+    maxLevel: 200,
+    category: "income",
+    effect: (l) => 1 + l * 0.12,
+    effectLabel: (l) => `×${(1 + l * 0.12).toFixed(2)}`,
   },
 };
 
 export const UPGRADE_ORDER: UpgradeId[] = [
-  "tapPower",
-  "shardValue",
-  "critChance",
+  "hammer",
+  "coins",
+  "income",
+  "crit",
   "critPower",
-  "comboDuration",
-  "autoTapper",
-  "autoSpeed",
-];
-
-// ---------- Shop (Prisms = premium currency earned via prestige + rewarded ads) ----------
-export const SHOP_ITEMS: ShopItemDef[] = [
-  { id: "tapBoostPerm", name: "Tempered Edge", desc: "Permanent +50% tap power.", icon: "🗡️", cost: 30, oneTime: true },
-  { id: "autoBoostPerm", name: "Overclocked Drill", desc: "Permanent +50% auto damage.", icon: "🔧", cost: 30, oneTime: true },
-  { id: "startCombo", name: "Warm-Up Routine", desc: "Start every run with a 10x combo.", icon: "🔥", cost: 45, oneTime: true },
-  { id: "prismPack", name: "Prism Cache", desc: "Instantly gain +5 Prisms.", icon: "📦", cost: 0, oneTime: false },
-  { id: "megaPrismPack", name: "Prism Vault", desc: "Instantly gain +30 Prisms.", icon: "🏦", cost: 0, oneTime: false },
-  { id: "skinEmber", name: "Ember Skin", desc: "Unlock the Ember crystal skin.", icon: "🟠", cost: 25, oneTime: true },
-  { id: "skinToxic", name: "Toxic Skin", desc: "Unlock the Toxic crystal skin.", icon: "🟢", cost: 40, oneTime: true },
-  { id: "skinCosmic", name: "Cosmic Skin", desc: "Unlock the Cosmic crystal skin.", icon: "🟣", cost: 60, oneTime: true },
-  { id: "skinRainbow", name: "Prism Skin", desc: "Unlock the rainbow Prism skin.", icon: "🌈", cost: 120, oneTime: true },
+  "combo",
+  "autoBuilder",
 ];
 
 // ---------- Achievements ----------
 export const ACHIEVEMENTS: AchievementDef[] = [
-  { id: "firstTap", name: "First Strike", desc: "Smash the crystal for the first time.", icon: "👆", reward: 50, check: (s) => s.totalTaps >= 1 },
-  { id: "taps100", name: "Warming Up", desc: "Tap 100 times.", icon: "✋", reward: 150, check: (s) => s.totalTaps >= 100 },
-  { id: "taps1000", name: "Tap Machine", desc: "Tap 1,000 times.", icon: "🖐️", reward: 1000, check: (s) => s.totalTaps >= 1000 },
-  { id: "taps10000", name: "Carpal Tunnel", desc: "Tap 10,000 times.", icon: "🦾", reward: 10000, check: (s) => s.totalTaps >= 10000 },
-  { id: "reachLevel5", name: "Getting Bigger", desc: "Reach crystal level 5.", icon: "🔺", reward: 500, check: (s) => s.crystalLevel >= 5 },
-  { id: "reachLevel10", name: "Deep Core", desc: "Reach crystal level 10.", icon: "🔻", reward: 5000, check: (s) => s.crystalLevel >= 10 },
-  { id: "reachLevel25", name: "Abyssal", desc: "Reach crystal level 25.", icon: "🏜️", reward: 100000, check: (s) => s.crystalLevel >= 25 },
-  { id: "combo50", name: "Combo King", desc: "Reach a 50 combo.", icon: "⚡", reward: 800, check: (_, ctx) => ctx.currentCombo >= 50 },
-  { id: "combo100", name: "Untouchable", desc: "Reach a 100 combo (with Warm-Up).", icon: "🌟", reward: 5000, check: (_, ctx) => ctx.currentCombo >= 100 },
-  { id: "earn10k", name: "Pocket Change", desc: "Earn 10,000 lifetime shards.", icon: "🪙", reward: 1000, check: (s) => s.totalShardsEarned >= 10000 },
-  { id: "earn1m", name: "Shard Tycoon", desc: "Earn 1,000,000 lifetime shards.", icon: "💰", reward: 50000, check: (s) => s.totalShardsEarned >= 1_000_000 },
-  { id: "earn1b", name: "Crystal Empire", desc: "Earn 1,000,000,000 lifetime shards.", icon: "👑", reward: 5_000_000, check: (s) => s.totalShardsEarned >= 1_000_000_000 },
-  { id: "firstPrestige", name: "Reborn", desc: "Reforge (prestige) for the first time.", icon: "♻️", reward: 2000, check: (s) => s.prestigeCount >= 1 },
-  { id: "prestige5", name: "Eternal", desc: "Reforge 5 times.", icon: "♾️", reward: 50000, check: (s) => s.prestigeCount >= 5 },
+  { id: "firstBuild", name: "Foundation", desc: "Complete your first building.", icon: "🏠", reward: 50, check: (s) => s.builtCount >= 1 },
+  { id: "build10", name: "Hamlet", desc: "Complete 10 buildings.", icon: "🏘️", reward: 200, check: (s) => s.builtCount >= 10 },
+  { id: "build50", name: "Village", desc: "Complete 50 buildings.", icon: "🏙️", reward: 1500, check: (s) => s.builtCount >= 50 },
+  { id: "build100", name: "Town", desc: "Complete 100 buildings.", icon: "🌆", reward: 8000, check: (s) => s.builtCount >= 100 },
+  { id: "build500", name: "Metropolis", desc: "Complete 500 buildings.", icon: "🌃", reward: 80000, check: (s) => s.builtCount >= 500 },
+  { id: "build1000", name: "Empire", desc: "Complete 1000 buildings.", icon: "🏯", reward: 1_000_000, check: (s) => s.builtCount >= 1000 },
+  { id: "combo30", name: "In The Zone", desc: "Reach a 30 combo.", icon: "⚡", reward: 600, check: (_, c) => c.currentCombo >= 30 },
+  { id: "combo75", name: "Unstoppable", desc: "Reach a 75 combo.", icon: "🌟", reward: 4000, check: (_, c) => c.currentCombo >= 75 },
+  { id: "firstAscend", name: "Reborn", desc: "Ascend for the first time.", icon: "♾️", reward: 2000, check: (s) => s.ascensionCount >= 1 },
+  { id: "ascend3", name: "Eternal", desc: "Ascend 3 times.", icon: "🌌", reward: 50000, check: (s) => s.ascensionCount >= 3 },
+  { id: "earn10k", name: "Pocket Change", desc: "Earn 10,000 lifetime coins.", icon: "💰", reward: 1000, check: (s) => s.totalCoinsEarned >= 10000 },
+  { id: "earn1m", name: "Tycoon", desc: "Earn 1,000,000 lifetime coins.", icon: "💎", reward: 50000, check: (s) => s.totalCoinsEarned >= 1_000_000 },
+  { id: "earn1b", name: "Realm Emperor", desc: "Earn 1,000,000,000 lifetime coins.", icon: "👑", reward: 5_000_000, check: (s) => s.totalCoinsEarned >= 1_000_000_000 },
   { id: "daily7", name: "Devoted", desc: "Reach a 7-day streak.", icon: "📅", reward: 10000, check: (s) => s.streak >= 7 },
-  { id: "critMaster", name: "Critical Master", desc: "Own level 30+ Critical Edge.", icon: "🎯", reward: 25000, check: (s) => (s.upgrades.critChance || 0) >= 30 },
+  { id: "allBiomes", name: "Explorer", desc: "Reach the Void biome (building 8).", icon: "🗺️", reward: 20000, check: (s) => s.maxBiomeReached >= 7 },
+  { id: "critMaster", name: "Critical Master", desc: "Own level 30+ Master Stroke.", icon: "🎯", reward: 25000, check: (s) => (s.upgrades.crit || 0) >= 30 },
 ];
 
 // ---------- Default save ----------
 export function defaultSave(): SaveState {
   return {
-    shards: 0,
-    prisms: 0,
-    crystalLevel: 1,
-    crystalHp: CRYSTAL_BASE_HP,
+    coins: 0,
+    relics: 0,
+    builtCount: 0,
+    activeProgress: 0,
+    cumulativeIncome: 0,
     upgrades: {
-      tapPower: 0,
-      shardValue: 0,
-      critChance: 0,
+      hammer: 0,
+      coins: 0,
+      combo: 0,
+      crit: 0,
       critPower: 0,
-      comboDuration: 0,
-      autoTapper: 0,
-      autoSpeed: 0,
+      autoBuilder: 0,
+      income: 0,
     },
-    totalShardsEarned: 0,
-    runShardsEarned: 0,
+    totalCoinsEarned: 0,
+    runCoinsEarned: 0,
     totalTaps: 0,
     maxCombo: 0,
-    prestigeCount: 0,
-    ownedSkins: ["default"],
-    activeSkin: "default",
+    ascensionCount: 0,
+    ownedThemes: ["classic"],
+    activeTheme: "classic",
     unlockedAchievements: [],
     lastClaimDay: null,
     streak: 0,
@@ -200,5 +643,8 @@ export function defaultSave(): SaveState {
     lastSeen: Date.now(),
     surgeEndsAt: 0,
     createdAt: Date.now(),
+    cameraX: 0,
+    perm: {},
+    maxBiomeReached: 0,
   };
 }

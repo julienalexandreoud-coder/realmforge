@@ -42,3 +42,31 @@ Stage Summary:
 - Monetization (CrazyGames-style): 3 rewarded-ad placements (Power Surge 3x/60s, double offline, combo restore) + premium Prisms shop (skins, perm boosts) — simulated ad modal with SDK-ready integration points.
 - Retention hooks: daily 7-day streak, prestige, achievements, leaderboard, offline earnings, combos.
 - Juice: canvas particles, floating crit numbers, crystal shake/scale/cracks, synthesized Web Audio sfx + ambient music, framer-motion toasts.
+
+---
+Task ID: 10-18
+Agent: main
+Task: Redesign into authentic pixel-art infinite city-builder (REALMFORGE)
+
+Work Log:
+- Generated pixel-art logo (realmforge-logo.png, 1344x768) + icon (realmforge-icon.png, 1024x1024) via image-generation skill
+- Rewrote types.ts: infinite city model (builtCount, activeProgress, cumulativeIncome, biomes, themes, perm boosts)
+- Rewrote config.ts: 8 hand-crafted pixel biomes (plains/forest/desert/snow/volcano/sky/space/void) with sky gradients, ground, decorations; 16 building sprites as ASCII pixel grids with palettes (cottage, windmill, barn, treehouse, lodge, pyramid, oasis, igloo, icecastle, forge, obsidian, cloudhall, balloon, rocket, dome, crystaltower, riftgate); 7 upgrades; 16 achievements; deterministic per-plot generation (seededRand) for infinite world
+- Rewrote engine.ts: tap→build progress, tapCoins, completeBonus, buildingIncome scaling, relicMultiplier (+5%/relic), ascension math, offline earnings
+- Rewrote gameStore.ts: tap() advances construction + completes buildings (chains), auto-builder tick, passive income, ascend() prestige reset, daily streak, rewarded ads, leaderboard sync
+- Rewrote GameCanvas.tsx: pixel-art renderer — imageSmoothingEnabled=false, integer math, sky gradients per biome, parallax mountains, pixel buildings from sprite grids, construction animation (building rises from ground + scaffolding), progress bar, hammer bonk, square-pixel particles, pixel-font floating numbers, combo meter, camera auto-follow + drag-to-scroll, stars/sun per biome
+- Added pixel fonts: Press Start 2P (headings) + VT323 (body) via next/font; .font-pixel utility; image-rendering:pixelated globally
+- Restyled all panels to pixel theme: chunky 2px borders, no rounded corners, pixel font labels, square buttons
+- Renamed currencies: shards→coins 🪙, prisms→relics 🏺; crystal→build target; reforge→ascend; skins→themes
+- Updated layout.tsx (pixel fonts, favicon=icon, OG image=logo), globals.css (pixel font util, pixelated images, square scrollbars)
+- Fixed 2 bugs: ASCEND_THRESHOLD→ASCENSION_THRESHOLD naming; missing OFFLINE_CAP_MS import
+- Verified with Agent Browser: name dialog → 31 taps built 5 buildings (combo 30, 42/sec income) → bought Hammer+Income upgrades → claimed Day 1 streak → watched Golden Age ad (3× for 59s) → rapid build to 28 buildings crossing all 8 biomes (maxBiome=7 Void, camera scrolled 1502px) → ascended (gained 11 relics, reset to 0, ascension=1, Reborn achievement +2000)
+- VLM (3 checks): "cohesive retro pixel art, not AI-generic, no glitches", "polished indie pixel-art game, avoids AI-generated stiffness", mobile layout usable, ascend panel clear
+- Console: zero errors; lint: clean
+
+Stage Summary:
+- REALMFORGE is a fully reworked authentic pixel-art infinite city-builder.
+- Every tap visibly builds a pixel structure (rises from ground with scaffolding + progress bar); completing a building bursts particles, awards coins, and the city grows.
+- Infinite: world generates deterministically forever across 8 cycling biomes (16 unique pixel buildings); camera auto-follows + drag-to-pan; prestige (Ascend) resets for permanent Relics (+5% each) → truly infinite progression.
+- Pixel authenticity: hand-drawn ASCII sprite grids, limited per-biome palettes, Press Start 2P + VT323 fonts, crisp pixelated rendering, chiptune Web Audio.
+- Monetization retained: 3 rewarded-ad placements + Relics shop (themes + perm boosts).

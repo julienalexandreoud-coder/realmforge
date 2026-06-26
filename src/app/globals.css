@@ -121,7 +121,21 @@
   }
 }
 
-/* Custom scrollbars for the game */
+/* Pixel font utility */
+.font-pixel {
+  font-family: var(--font-pixel), "Press Start 2P", monospace !important;
+  letter-spacing: 0.02em;
+}
+
+/* Pixel-perfect rendering for images */
+img,
+canvas {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Custom scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(34, 211, 238, 0.3) transparent;
@@ -135,7 +149,7 @@
 }
 *::-webkit-scrollbar-thumb {
   background: rgba(34, 211, 238, 0.25);
-  border-radius: 999px;
+  border-radius: 0;
 }
 *::-webkit-scrollbar-thumb:hover {
   background: rgba(34, 211, 238, 0.45);
@@ -143,13 +157,19 @@
 
 html,
 body {
-  background: #05070f;
+  background: #0a0a1a;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Prevent text selection during rapid tapping */
 canvas {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* chunky pixel-style focus */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 2px;
 }

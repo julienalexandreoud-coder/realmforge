@@ -1,64 +1,86 @@
-// PRISM SMASH — core type definitions
+// REALMFORGE — core type definitions (infinite pixel-art city builder)
+
+export type BiomeId =
+  | "plains"
+  | "forest"
+  | "desert"
+  | "snow"
+  | "volcano"
+  | "sky"
+  | "space"
+  | "void";
 
 export type UpgradeId =
-  | "tapPower"
-  | "autoTapper"
-  | "critChance"
-  | "critPower"
-  | "comboDuration"
-  | "shardValue"
-  | "autoSpeed";
+  | "hammer" // build progress per tap
+  | "coins" // coin gain multiplier
+  | "combo" // combo window duration
+  | "crit" // crit chance
+  | "critPower" // crit multiplier
+  | "autoBuilder" // auto build per sec
+  | "income"; // building income multiplier
 
-export type ShopItemId =
-  | "prismPack"
-  | "megaPrismPack"
-  | "tapBoostPerm"
-  | "autoBoostPerm"
-  | "startCombo"
-  | "skinDefault"
-  | "skinEmber"
-  | "skinToxic"
-  | "skinCosmic"
-  | "skinRainbow";
+export type ThemeId =
+  | "classic"
+  | "dawn"
+  | "dusk"
+  | "midnight"
+  | "neon";
 
 export type AchievementId =
-  | "firstTap"
-  | "taps100"
-  | "taps1000"
-  | "taps10000"
-  | "reachLevel5"
-  | "reachLevel10"
-  | "reachLevel25"
-  | "firstPrestige"
-  | "prestige5"
-  | "combo50"
-  | "combo100"
+  | "firstBuild"
+  | "build10"
+  | "build50"
+  | "build100"
+  | "build500"
+  | "build1000"
+  | "combo30"
+  | "combo75"
+  | "firstAscend"
+  | "ascend3"
   | "earn10k"
   | "earn1m"
   | "earn1b"
   | "daily7"
+  | "allBiomes"
   | "critMaster";
 
-export type SkinId =
-  | "default"
-  | "ember"
-  | "toxic"
-  | "cosmic"
-  | "rainbow";
+export interface BuildingDef {
+  id: string;
+  name: string;
+  biome: BiomeId;
+  w: number; // sprite width in tiles
+  h: number; // sprite height in tiles
+  sprite: string[]; // rows of palette keys, '.' = transparent
+  palette: Record<string, string>; // key -> hex color
+  baseIncome: number; // coins/sec when complete (before scaling)
+}
+
+export interface BiomeDef {
+  id: BiomeId;
+  name: string;
+  sky: string[]; // gradient stops (top to bottom)
+  ground: string; // ground fill
+  groundDark: string; // ground shadow line
+  accent: string; // biome accent (HUD/borders)
+  decoration: string[]; // pixel decoration sprite (trees, cacti...) — drawn between buildings
+  decPalette: Record<string, string>;
+  buildings: string[]; // building ids available
+}
 
 export interface SaveState {
-  shards: number;
-  prisms: number;
-  crystalLevel: number;
-  crystalHp: number;
+  coins: number;
+  relics: number;
+  builtCount: number; // total completed buildings (infinite counter)
+  activeProgress: number; // 0..1 progress of current build
+  cumulativeIncome: number; // total coins/sec from all completed buildings
   upgrades: Record<UpgradeId, number>;
-  totalShardsEarned: number;
-  runShardsEarned: number;
+  totalCoinsEarned: number; // lifetime (leaderboard)
+  runCoinsEarned: number; // this ascension (relic calc)
   totalTaps: number;
   maxCombo: number;
-  prestigeCount: number;
-  ownedSkins: SkinId[];
-  activeSkin: SkinId;
+  ascensionCount: number;
+  ownedThemes: ThemeId[];
+  activeTheme: ThemeId;
   unlockedAchievements: AchievementId[];
   lastClaimDay: string | null;
   streak: number;
@@ -66,42 +88,9 @@ export interface SaveState {
   lastSeen: number;
   surgeEndsAt: number;
   createdAt: number;
-}
-
-export interface AchievementContext {
-  currentCombo: number;
-  currentLevel: number;
-}
-
-export interface AchievementDef {
-  id: AchievementId;
-  name: string;
-  desc: string;
-  icon: string;
-  reward: number;
-  check: (s: SaveState, ctx: AchievementContext) => boolean;
-}
-
-export interface UpgradeDef {
-  id: UpgradeId;
-  name: string;
-  desc: string;
-  icon: string;
-  baseCost: number;
-  costGrowth: number;
-  maxLevel: number;
-  effect: (level: number) => number;
-  effectLabel: (level: number) => string;
-  category: "tap" | "auto" | "crit" | "combo" | "value";
-}
-
-export interface ShopItemDef {
-  id: ShopItemId;
-  name: string;
-  desc: string;
-  icon: string;
-  cost: number;
-  oneTime: boolean;
+  cameraX: number; // world camera offset
+  perm: Record<string, boolean>; // permanent boost flags
+  maxBiomeReached: number; // highest biome index reached
 }
 
 export interface FloatingNumber {
@@ -123,4 +112,31 @@ export interface Particle {
   maxLife: number;
   size: number;
   color: string;
+}
+
+export interface AchievementDef {
+  id: AchievementId;
+  name: string;
+  desc: string;
+  icon: string;
+  reward: number;
+  check: (s: SaveState, ctx: AchievementContext) => boolean;
+}
+
+export interface AchievementContext {
+  currentCombo: number;
+  biomesReached: number;
+}
+
+export interface UpgradeDef {
+  id: UpgradeId;
+  name: string;
+  desc: string;
+  icon: string;
+  baseCost: number;
+  costGrowth: number;
+  maxLevel: number;
+  effect: (level: number) => number;
+  effectLabel: (level: number) => string;
+  category: "tap" | "auto" | "crit" | "combo" | "income";
 }

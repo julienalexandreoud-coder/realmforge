@@ -1,9 +1,9 @@
-// PRISM SMASH — localStorage persistence
+// REALMFORGE — localStorage persistence
 import type { SaveState } from "./types";
 import { defaultSave } from "./config";
 
-const SAVE_KEY = "prism-smash-save-v1";
-const NAME_KEY = "prism-smash-name-v1";
+const SAVE_KEY = "realmforge-save-v1";
+const NAME_KEY = "realmforge-name-v1";
 
 export function loadSave(): SaveState {
   if (typeof window === "undefined") return defaultSave();
@@ -12,17 +12,19 @@ export function loadSave(): SaveState {
     if (!raw) return defaultSave();
     const parsed = JSON.parse(raw) as Partial<SaveState>;
     const base = defaultSave();
-    // merge to be resilient to schema additions
     const merged: SaveState = {
       ...base,
       ...parsed,
       upgrades: { ...base.upgrades, ...(parsed.upgrades || {}) },
-      ownedSkins: parsed.ownedSkins && parsed.ownedSkins.length ? parsed.ownedSkins : base.ownedSkins,
+      ownedThemes: parsed.ownedThemes && parsed.ownedThemes.length ? parsed.ownedThemes : base.ownedThemes,
       unlockedAchievements: parsed.unlockedAchievements || [],
+      perm: parsed.perm || {},
     };
-    // sanity clamp
-    if (!isFinite(merged.shards) || merged.shards < 0) merged.shards = 0;
-    if (!isFinite(merged.prisms) || merged.prisms < 0) merged.prisms = 0;
+    if (!isFinite(merged.coins) || merged.coins < 0) merged.coins = 0;
+    if (!isFinite(merged.relics) || merged.relics < 0) merged.relics = 0;
+    if (!isFinite(merged.builtCount) || merged.builtCount < 0) merged.builtCount = 0;
+    if (!isFinite(merged.activeProgress) || merged.activeProgress < 0) merged.activeProgress = 0;
+    if (!isFinite(merged.cumulativeIncome) || merged.cumulativeIncome < 0) merged.cumulativeIncome = 0;
     return merged;
   } catch {
     return defaultSave();
@@ -34,7 +36,7 @@ export function persistSave(s: SaveState) {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(s));
   } catch {
-    // storage full or unavailable — ignore
+    // ignore
   }
 }
 
@@ -65,4 +67,10 @@ export function isYesterday(dayKey: string | null, ref = new Date()): boolean {
   const y = new Date(ref);
   y.setDate(ref.getDate() - 1);
   return todayKey(y) === dayKey;
+}
+
+// migrate old prism-smash saves gracefully: just ignore them (fresh start)
+export function clearOldSave() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("prism-smash-save-v1");
 }

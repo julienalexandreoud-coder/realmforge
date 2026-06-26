@@ -1,13 +1,10 @@
-// PRISM SMASH — synthesized sound engine (Web Audio API, no asset files)
-// Created lazily on first user gesture (browser autoplay policy).
-
-type SfxName = "tap" | "crit" | "smash" | "upgrade" | "prestige" | "combo" | "error" | "reward" | "surge" | "achievement";
+// REALMFORGE — synthesized retro chiptune sound engine (Web Audio, no assets)
+type SfxName = "hammer" | "crit" | "build" | "complete" | "upgrade" | "ascend" | "combo" | "error" | "reward" | "surge" | "achievement" | "coin";
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private musicGain: GainNode | null = null;
-  private musicNodes: OscillatorNode[] = [];
   private musicTimer: number | null = null;
   private muted = false;
   public musicEnabled = true;
@@ -19,10 +16,10 @@ class AudioEngine {
       const Ctx = window.AudioContext || (window as any).webkitAudioContext;
       this.ctx = new Ctx();
       this.master = this.ctx.createGain();
-      this.master.gain.value = 0.5;
+      this.master.gain.value = 0.45;
       this.master.connect(this.ctx.destination);
       this.musicGain = this.ctx.createGain();
-      this.musicGain.gain.value = 0.12;
+      this.musicGain.gain.value = 0.1;
       this.musicGain.connect(this.master);
     } catch {
       this.ctx = null;
@@ -35,23 +32,22 @@ class AudioEngine {
 
   setMuted(m: boolean) {
     this.muted = m;
-    if (this.master) this.master.gain.value = m ? 0 : 0.5;
+    if (this.master) this.master.gain.value = m ? 0 : 0.45;
   }
-
   isMuted() {
     return this.muted;
   }
 
-  private blip(freq: number, dur: number, type: OscillatorType = "sine", vol = 0.4, slideTo?: number) {
+  private blip(freq: number, dur: number, type: OscillatorType = "square", vol = 0.4, slideTo?: number) {
     if (!this.ctx || !this.master || this.muted) return;
-    const t = this.ctx.now ? this.ctx.now() : this.ctx.currentTime;
+    const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, t);
-    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(1, slideTo), t + dur);
     gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(vol, t + 0.005);
+    gain.gain.exponentialRampToValueAtTime(vol, t + 0.004);
     gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     osc.connect(gain);
     gain.connect(this.master);
@@ -83,74 +79,101 @@ class AudioEngine {
     if (!this.ctx || this.muted) return;
     this.resume();
     switch (name) {
-      case "tap":
-        this.blip(420 + Math.random() * 80, 0.08, "triangle", 0.25, 300);
+      case "hammer":
+        this.blip(180 + Math.random() * 40, 0.05, "square", 0.18, 120);
+        this.noise(0.04, 0.12, 1200);
         break;
       case "crit":
-        this.blip(880, 0.12, "sawtooth", 0.35, 1600);
-        this.blip(1320, 0.1, "sine", 0.25, 2200);
+        this.blip(660, 0.08, "square", 0.3, 1320);
+        this.blip(990, 0.1, "square", 0.25, 1980);
         break;
-      case "smash":
-        this.noise(0.25, 0.4, 400);
-        this.blip(180, 0.3, "sawtooth", 0.3, 60);
-        this.blip(520, 0.2, "triangle", 0.2, 120);
+      case "build":
+        this.blip(440, 0.04, "triangle", 0.12);
+        break;
+      case "complete":
+        this.blip(523, 0.08, "square", 0.3);
+        this.blip(659, 0.08, "square", 0.3);
+        this.blip(784, 0.12, "square", 0.3);
+        this.blip(1047, 0.18, "square", 0.3);
+        break;
+      case "coin":
+        this.blip(988, 0.05, "square", 0.18, 1319);
         break;
       case "upgrade":
-        this.blip(523, 0.08, "sine", 0.3);
-        this.blip(659, 0.08, "sine", 0.3);
-        this.blip(784, 0.12, "sine", 0.3);
+        this.blip(659, 0.07, "square", 0.28);
+        this.blip(880, 0.1, "square", 0.28);
         break;
-      case "prestige":
-        this.blip(392, 0.15, "sine", 0.35);
-        this.blip(523, 0.15, "sine", 0.35);
-        this.blip(659, 0.15, "sine", 0.35);
-        this.blip(784, 0.4, "sine", 0.4);
+      case "ascend":
+        this.blip(392, 0.12, "square", 0.3);
+        this.blip(523, 0.12, "square", 0.3);
+        this.blip(659, 0.12, "square", 0.3);
+        this.blip(784, 0.3, "square", 0.3);
+        this.blip(1047, 0.5, "square", 0.35);
         break;
       case "combo":
-        this.blip(660 + Math.random() * 200, 0.05, "square", 0.15, 880);
+        this.blip(700 + Math.random() * 200, 0.04, "square", 0.12, 900);
         break;
       case "error":
-        this.blip(180, 0.15, "sawtooth", 0.3, 120);
+        this.blip(140, 0.12, "sawtooth", 0.25, 90);
         break;
       case "reward":
-        this.blip(659, 0.1, "sine", 0.3);
-        this.blip(880, 0.1, "sine", 0.3);
-        this.blip(1047, 0.18, "sine", 0.35);
+        this.blip(659, 0.08, "square", 0.28);
+        this.blip(880, 0.08, "square", 0.28);
+        this.blip(1047, 0.14, "square", 0.32);
         break;
       case "surge":
-        this.blip(220, 0.5, "sawtooth", 0.3, 880);
-        this.blip(440, 0.5, "sine", 0.3, 1760);
+        this.blip(220, 0.4, "sawtooth", 0.25, 880);
+        this.blip(440, 0.4, "square", 0.25, 1760);
         break;
       case "achievement":
-        this.blip(784, 0.1, "triangle", 0.3);
-        this.blip(988, 0.1, "triangle", 0.3);
-        this.blip(1319, 0.25, "triangle", 0.35);
+        this.blip(784, 0.08, "square", 0.28);
+        this.blip(988, 0.08, "square", 0.28);
+        this.blip(1319, 0.2, "square", 0.32);
         break;
     }
   }
 
-  // simple ambient arpeggio loop
+  // gentle chiptune arpeggio
   startMusic() {
     if (!this.ctx || !this.musicGain || this.musicTimer !== null) return;
-    const scale = [220, 261.63, 329.63, 392, 440, 523.25, 659.25];
+    const scale = [220, 277.18, 329.63, 369.99, 440, 523.25, 587.33, 659.25];
     let step = 0;
+    const bass = [110, 110, 146.83, 146.83];
+    let b = 0;
     const tick = () => {
       if (!this.ctx || !this.musicGain) return;
-      const note = scale[step % scale.length] * (step % 14 < 7 ? 1 : 0.5);
+      // melody
+      const note = scale[step % scale.length];
       const osc = this.ctx.createOscillator();
       const g = this.ctx.createGain();
-      osc.type = "sine";
+      osc.type = "square";
       osc.frequency.value = note;
       g.gain.setValueAtTime(0.0001, this.ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.5, this.ctx.currentTime + 0.05);
-      g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.5);
+      g.gain.exponentialRampToValueAtTime(0.4, this.ctx.currentTime + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.35);
       osc.connect(g);
       g.connect(this.musicGain);
       osc.start();
-      osc.stop(this.ctx.currentTime + 0.55);
+      osc.stop(this.ctx.currentTime + 0.4);
+      // bass every 4 steps
+      if (step % 4 === 0) {
+        const bn = bass[b % bass.length];
+        b++;
+        const bo = this.ctx.createOscillator();
+        const bg = this.ctx.createGain();
+        bo.type = "triangle";
+        bo.frequency.value = bn;
+        bg.gain.setValueAtTime(0.0001, this.ctx.currentTime);
+        bg.gain.exponentialRampToValueAtTime(0.6, this.ctx.currentTime + 0.02);
+        bg.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + 0.9);
+        bo.connect(bg);
+        bg.connect(this.musicGain);
+        bo.start();
+        bo.stop(this.ctx.currentTime + 0.95);
+      }
       step++;
     };
-    this.musicTimer = window.setInterval(tick, 280);
+    this.musicTimer = window.setInterval(tick, 260);
   }
 
   stopMusic() {
@@ -167,7 +190,6 @@ class AudioEngine {
   }
 }
 
-// singleton (client only)
 let engine: AudioEngine | null = null;
 export function getAudio(): AudioEngine {
   if (!engine) engine = new AudioEngine();
