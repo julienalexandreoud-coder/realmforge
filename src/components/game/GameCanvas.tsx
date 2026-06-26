@@ -290,24 +290,43 @@ function drawSky(ctx: CanvasRenderingContext2D, w: number, h: number, biome: Bio
 }
 
 function drawParallax(ctx: CanvasRenderingContext2D, w: number, h: number, cam: number, biome: BiomeDef, t: number) {
-  // distant mountains/hills as silhouettes
-  if (biome.id === "plains" || biome.id === "forest" || biome.id === "desert" || biome.id === "snow") {
-    ctx.fillStyle = biome.groundDark;
-    ctx.globalAlpha = 0.4;
-    const baseY = h - GROUND_H - 6;
-    const offset = (cam * 0.3) % 80;
-    ctx.beginPath();
-    ctx.moveTo(-offset, baseY);
-    for (let x = -offset; x < w + 80; x += 80) {
-      ctx.lineTo(x + 40, baseY - 30);
-      ctx.lineTo(x + 80, baseY);
+  const baseY = h - GROUND_H - 4;
+  // distant city skyline silhouettes (parallax 0.5) — gives depth behind the built towers
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = biome.groundDark;
+  const off = (cam * 0.5) % 48;
+  let bx = -off;
+  let i = 0;
+  while (bx < w + 48) {
+    // deterministic height per silhouette index
+    const sh = 18 + ((i * 37) % 5) * 8 + ((i * 13) % 3) * 4;
+    const sw = 16 + ((i * 7) % 3) * 4;
+    ctx.fillRect(Math.floor(bx), Math.floor(baseY - sh), sw, Math.floor(sh));
+    // tiny window glints on the silhouette
+    ctx.fillStyle = biome.accent;
+    ctx.globalAlpha = 0.25;
+    for (let wy = 4; wy < sh - 4; wy += 6) {
+      if ((i + wy) % 3 === 0) ctx.fillRect(Math.floor(bx + 3), Math.floor(baseY - sh + wy), 2, 2);
+      if ((i + wy) % 4 === 0) ctx.fillRect(Math.floor(bx + sw - 5), Math.floor(baseY - sh + wy), 2, 2);
     }
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    ctx.fillStyle = biome.groundDark;
+    ctx.globalAlpha = 0.5;
+    bx += sw + 4;
+    i++;
   }
+  // a second, even-farther haze layer
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = biome.sky[0];
+  const off2 = (cam * 0.25) % 64;
+  let bx2 = -off2;
+  let j = 0;
+  while (bx2 < w + 64) {
+    const sh2 = 10 + ((j * 29) % 4) * 6;
+    ctx.fillRect(Math.floor(bx2), Math.floor(baseY - sh2), 22, Math.floor(sh2));
+    bx2 += 26;
+    j++;
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawDecoration(ctx: CanvasRenderingContext2D, x: number, groundY: number, biome: BiomeDef) {
@@ -339,7 +358,7 @@ function drawBuilding(
   biome: BiomeDef,
   t: number
 ) {
-  const px = Math.max(2, Math.floor(4 * scale));
+  const px = Math.max(3, Math.floor(5 * scale));
   const w = def.w;
   const h = def.h;
   const offX = x - (w * px) / 2;
@@ -353,7 +372,17 @@ function drawBuilding(
       if (!ch || ch === "." || ch === " ") continue;
       const color = def.palette[ch];
       if (!color) continue;
-      ctx.fillStyle = themeTint(color);
+      // lit windows twinkle: a few flicker brighter based on time + position
+      if (ch === "L") {
+        const flick = Math.sin(t / 600 + (x + r * 7 + c * 13)) ;
+        if (flick > 0.85) {
+          ctx.fillStyle = "#ffffff";
+        } else {
+          ctx.fillStyle = themeTint(color);
+        }
+      } else {
+        ctx.fillStyle = themeTint(color);
+      }
       ctx.fillRect(Math.floor(offX + c * px), Math.floor(offY + r * px + bob), px, px);
     }
   }
@@ -370,7 +399,7 @@ function drawConstruction(
   t: number,
   pulse: number
 ) {
-  const px = 4;
+  const px = 5;
   const w = def.w;
   const h = def.h;
   const offX = x - (w * px) / 2;

@@ -46,7 +46,7 @@ export const BIOMES: BiomeDef[] = [
     accent: "#22d3ee",
     decoration: ["..T..", ".TTT.", "TTTTT", "..|.."],
     decPalette: { T: "#14532d", "|:": "#3a2410" },
-    buildings: ["cottage", "windmill", "barn"],
+    buildings: ["plainsA", "plainsB"],
   },
   {
     id: "forest",
@@ -57,7 +57,7 @@ export const BIOMES: BiomeDef[] = [
     accent: "#10b981",
     decoration: ["..F..", ".FFF.", "FFFFF", "FFFFF", "..#.."],
     decPalette: { F: "#064e3b", "#": "#3a2410" },
-    buildings: ["treehouse", "lodge"],
+    buildings: ["forestA", "forestB"],
   },
   {
     id: "desert",
@@ -68,7 +68,7 @@ export const BIOMES: BiomeDef[] = [
     accent: "#f59e0b",
     decoration: ["..c..", ".ccc.", "ccccc", "..|.."],
     decPalette: { c: "#3f7a2a", "|:": "#7a5a2a" },
-    buildings: ["pyramid", "oasis"],
+    buildings: ["desertA", "desertB"],
   },
   {
     id: "snow",
@@ -79,7 +79,7 @@ export const BIOMES: BiomeDef[] = [
     accent: "#67e8f9",
     decoration: ["..*..", ".*P*.", "*PPP*", "..#.."],
     decPalette: { P: "#155e75", "*": "#e0f2fe", "#": "#3a2410" },
-    buildings: ["igloo", "icecastle"],
+    buildings: ["snowA", "snowB"],
   },
   {
     id: "volcano",
@@ -90,7 +90,7 @@ export const BIOMES: BiomeDef[] = [
     accent: "#fb7185",
     decoration: ["..R..", ".RRR.", "RRRRR", "..^.."],
     decPalette: { R: "#0a0a0a", "^": "#f97316" },
-    buildings: ["forge", "obsidian"],
+    buildings: ["volcanoA", "volcanoB"],
   },
   {
     id: "sky",
@@ -101,7 +101,7 @@ export const BIOMES: BiomeDef[] = [
     accent: "#38bdf8",
     decoration: ["ooooo", ".....", ".....", "ooooo"],
     decPalette: { o: "#cbd5e1" },
-    buildings: ["cloudhall", "balloon"],
+    buildings: ["skyA", "skyB"],
   },
   {
     id: "space",
@@ -112,7 +112,7 @@ export const BIOMES: BiomeDef[] = [
     accent: "#a855f7",
     decoration: ["*.*.*", ".....", ".*.*.", "....."],
     decPalette: { "*": "#e9d5ff", ".": "transparent" },
-    buildings: ["rocket", "dome"],
+    buildings: ["spaceA", "spaceB"],
   },
   {
     id: "void",
@@ -123,7 +123,7 @@ export const BIOMES: BiomeDef[] = [
     accent: "#e879f9",
     decoration: ["..V..", ".VVV.", "VVVVV", "..V.."],
     decPalette: { V: "#a21caf" },
-    buildings: ["crystaltower", "riftgate"],
+    buildings: ["voidA", "voidB"],
   },
 ];
 
@@ -146,349 +146,117 @@ export function buildingForPlot(index: number): BuildingDef {
   return BUILDINGS[biome.buildings[pick]];
 }
 
-// ---------- Buildings (hand-crafted pixel sprites) ----------
-export const BUILDINGS: Record<string, BuildingDef> = {
-  // ---- Plains ----
-  cottage: {
-    id: "cottage",
-    name: "Cottage",
-    biome: "plains",
-    w: 9,
-    h: 9,
-    baseIncome: 2,
-    palette: { R: "#b5443a", r: "#8a2f28", W: "#e8d5a8", w: "#c4ab7e", D: "#6b4423", W2: "#4a8ad9", g: "#ffffff" },
-    sprite: [
-      "....g....",
-      "...RRR...",
-      "..RRRRR..",
-      ".RRRRRRR.",
-      "WWWWWWWWW",
-      "WWDWWWWW2",
-      "WWDWWWWW2",
-      "WWWWWWWWW",
-      "WWWWWWWWW",
-    ],
-  },
-  windmill: {
-    id: "windmill",
-    name: "Windmill",
-    biome: "plains",
-    w: 9,
-    h: 10,
-    baseIncome: 3,
-    palette: { W: "#e8d5a8", w: "#c4ab7e", S: "#6b4423", M: "#5a3a2a", B: "#d9c08a" },
-    sprite: [
-      "....X....",
-      "...X.X...",
-      "..X...X..",
-      ".X.MMM.X.",
-      "...MSM...",
-      "...MSM...",
-      "..WMXMW..",
-      "..WMMM W.",
-      "..WMMMW..",
-      "..WWWWW..",
-    ].map((r) => r.replace(/X/g, "B")),
-  },
-  barn: {
-    id: "barn",
-    name: "Barn",
-    biome: "plains",
-    w: 10,
-    h: 8,
-    baseIncome: 2.5,
-    palette: { R: "#a83232", r: "#7a1f1f", W: "#e8d5a8", D: "#3a2010", B: "#5a3a2a" },
-    sprite: [
-      "...RRRR...",
-      "..RRRRRR..",
-      ".RRRRRRRR.",
-      "RRRRRRRRRR",
-      "RWWRDDRRRR",
-      "RWWRDDRRRR",
-      "RWWRDDRRRR",
-      "RRRRRRRRRR",
-    ],
-  },
-  // ---- Forest ----
-  treehouse: {
-    id: "treehouse",
-    name: "Treehouse",
-    biome: "forest",
-    w: 9,
-    h: 10,
-    baseIncome: 4,
-    palette: { T: "#1f5e1f", t: "#144014", W: "#a87f4a", D: "#5a3a1a", g: "#ffffff" },
-    sprite: [
-      "....g....",
-      "...TTT...",
-      "..TTTTT..",
-      ".TTTTTTT.",
-      "TTTTTTTTT",
-      "T.WWDWW T",
-      "T.WWDWW T",
-      "TtWWWWWt T".replace(" ", "."),
-      ".tWWTWWt.",
-      "..tWWt...",
-    ],
-  },
-  lodge: {
-    id: "lodge",
-    name: "Lodge",
-    biome: "forest",
-    w: 10,
-    h: 8,
-    baseIncome: 4.5,
-    palette: { W: "#7a5a3a", w: "#5a3f24", R: "#3a5a2a", D: "#2a1a0a", L: "#a87f4a" },
-    sprite: [
-      "...RRRR...",
-      "..RRRRRR..",
-      ".RRRRRRRR.",
-      "WWWWWWWWWW",
-      "WLWDWWWLWW",
-      "WLWDWWWLWW",
-      "WWWWWWWWWW",
-      "wwwwwwwwww",
-    ],
-  },
-  // ---- Desert ----
-  pyramid: {
-    id: "pyramid",
-    name: "Pyramid",
-    biome: "desert",
-    w: 9,
-    h: 7,
-    baseIncome: 5,
-    palette: { S: "#d4a64a", s: "#b8862a", D: "#5a3a1a", g: "#ffd700" },
-    sprite: [
-      "....g....",
-      "...SSS...",
-      "..SSSSS..",
-      ".SSSSSSS.",
-      "SSSSSSSSS",
-      "SsSsSsSsS",
-      "SSSSSSSSS",
-    ],
-  },
-  oasis: {
-    id: "oasis",
-    name: "Oasis",
-    biome: "desert",
-    w: 9,
-    h: 6,
-    baseIncome: 4,
-    palette: { W: "#3aa0d9", w: "#2a7fb0", P: "#3f7a2a", S: "#e0a83e" },
-    sprite: [
-      "..PPP....",
-      ".PWWWP..",
-      "PWWWWWP.",
-      "PWWWWWP.",
-      "SSSSSSSS",
-      "SsSsSsSs",
-    ].map((r) => r.padEnd(9, ".")),
-  },
-  // ---- Snow ----
-  igloo: {
-    id: "igloo",
-    name: "Igloo",
-    biome: "snow",
-    w: 9,
-    h: 6,
-    baseIncome: 6,
-    palette: { I: "#dfeef7", i: "#a8c8d8", D: "#3a5a7a", S: "#ffffff" },
-    sprite: [
-      "..SSSSS..",
-      ".IIIIIII.",
-      "IIIIIIIII",
-      "IIIDIIIII",
-      "IIIDIIIII",
-      "iiiiiiiii",
-    ],
-  },
-  icecastle: {
-    id: "icecastle",
-    name: "Ice Castle",
-    biome: "snow",
-    w: 10,
-    h: 9,
-    baseIncome: 7,
-    palette: { I: "#bfe3f5", i: "#7fb8d8", D: "#3a5a7a", S: "#ffffff", g: "#e8f6ff" },
-    sprite: [
-      "I..I..I..I",
-      "Ig.Ig.Ig.I".replace(/g/g, "I"),
-      "IIIIIIIIII",
-      "IIiIIiIIiI",
-      "IIIDDIIDII",
-      "IIIDDIIDII",
-      "IIIIIIIIII",
-      "iiiiiiiiii",
-      "..........",
-    ],
-  },
-  // ---- Volcano ----
-  forge: {
-    id: "forge",
-    name: "Forge",
-    biome: "volcano",
-    w: 9,
-    h: 8,
-    baseIncome: 9,
-    palette: { B: "#3a2424", b: "#1f1414", M: "#5a2a2a", F: "#ff6a00", D: "#2a1010" },
-    sprite: [
-      "...F.F...",
-      "..MMMMM..",
-      ".BBBBBBB.",
-      "BBBDDDBBB",
-      "BBBDFDBBB",
-      "BBBDDDBBB",
-      "BBBBBBBBB",
-      "bbbbbbbbb",
-    ],
-  },
-  obsidian: {
-    id: "obsidian",
-    name: "Obsidian Spire",
-    biome: "volcano",
-    w: 9,
-    h: 10,
-    baseIncome: 10,
-    palette: { O: "#1a1a1a", o: "#0a0a0a", F: "#ff3a00", g: "#ffaa00" },
-    sprite: [
-      "....g....",
-      "...OOO...",
-      "..OOOOO..",
-      ".OOFOOO..",
-      "OOOFOOOO.",
-      "OOOOOOOO.",
-      "oOOOOOOo.",
-      "ooOOOOoo.",
-      ".ooOOoo..",
-      "..oooo...",
-    ],
-  },
-  // ---- Sky ----
-  cloudhall: {
-    id: "cloudhall",
-    name: "Cloud Hall",
-    biome: "sky",
-    w: 10,
-    h: 7,
-    baseIncome: 13,
-    palette: { C: "#ffffff", c: "#dfeeff", W: "#bfe0ff", g: "#ffe06a" },
-    sprite: [
-      "..g.....g.",
-      ".CCWCCWCC.",
-      "CCCWWWWCCC",
-      "CCCCCCCCCC",
-      "CcCCCCCCcC",
-      "CCCCCCCCCC",
-      ".cc.cccc.c",
-    ],
-  },
-  balloon: {
-    id: "balloon",
-    name: "Sky Balloon",
-    biome: "sky",
-    w: 9,
-    h: 9,
-    baseIncome: 12,
-    palette: { B: "#e84a4a", b: "#a82a2a", R: "#5a3a2a", W: "#e8d5a8", g: "#ffe06a" },
-    sprite: [
-      "...g.g...",
-      "..BBBBB..",
-      ".BBBBBBB.",
-      "BBBbBbBBB",
-      "BBBBBBBBB",
-      ".bB.B.Bb.",
-      "...RRR...",
-      "..WWWWW..",
-      "..WWWWW..",
-    ],
-  },
-  // ---- Space ----
-  rocket: {
-    id: "rocket",
-    name: "Rocket",
-    biome: "space",
-    w: 9,
-    h: 11,
-    baseIncome: 18,
-    palette: { W: "#e8e8e8", w: "#9a9a9a", R: "#d93232", F: "#ff7a00", g: "#ffe06a", W2: "#3a6ad9" },
-    sprite: [
-      "....g....",
-      "...WWW...",
-      "..WWWWW..",
-      ".WWWWWWW.",
-      "WWWWWWWWW",
-      "WWWwWwWWW",
-      "WWWWWWWWW",
-      "WWRWWWRWW",
-      "WWWWWWWWW",
-      ".F.F.F.F.",
-      ".F.F.F.F.",
-    ],
-  },
-  dome: {
-    id: "dome",
-    name: "Biodome",
-    biome: "space",
-    w: 10,
-    h: 7,
-    baseIncome: 16,
-    palette: { G: "#5fd9a0", g: "#3aa070", W: "#dfeeff", S: "#3a6ad9", P: "#2f7d32" },
-    sprite: [
-      "..WWWWW..",
-      ".WGGGGGW.",
-      "WGGgGgGGW",
-      "WGPGGGPGW",
-      "WGGGGGGGW",
-      "SSSSSSSSS",
-      "SSSSSSSSS".padEnd(10, "S"),
-    ],
-  },
-  // ---- Void ----
-  crystaltower: {
-    id: "crystaltower",
-    name: "Crystal Tower",
-    biome: "void",
-    w: 9,
-    h: 11,
-    baseIncome: 24,
-    palette: { C: "#c026d3", c: "#7a189a", g: "#f0abfc", P: "#e879f9", W: "#2a1a3a" },
-    sprite: [
-      "....g....",
-      "...CgC...",
-      "..CCPCC..",
-      ".CCCPPCC.",
-      "CCCPPPCCc",
-      "CCCPPPCCc",
-      "CCCPPPCCc",
-      "CCCPPPCCc",
-      "WCCCCCCCW",
-      "WWWCWWCWW",
-      "WWWWWWWWW",
-    ],
-  },
-  riftgate: {
-    id: "riftgate",
-    name: "Rift Gate",
-    biome: "void",
-    w: 9,
-    h: 9,
-    baseIncome: 22,
-    palette: { P: "#a855f7", p: "#7a189a", G: "#f0abfc", S: "#3a1a5a", g: "#ffffff" },
-    sprite: [
-      "....g....",
-      "...PGP...",
-      "..PGGGP..",
-      ".PGGGGGP.",
-      "PGGgggGGP",
-      "PGGgggGGP",
-      "PGGgggGGP",
-      ".PGGGGGP.",
-      "..SSSSS..",
-    ],
-  },
-};
+// ---------- Buildings: procedurally-generated tall city towers with lit windows ----------
+// Each tower = roof + N floors (window row + wall band) + base/door. Wall-to-wall when
+// rendered (12 cells wide @ 5px = 60px in a 64px plot) → reads as a continuous city skyline.
+type Roof = "flat" | "spire" | "pyramid" | "antenna" | "dome";
+interface TowerSpec {
+  id: string;
+  name: string;
+  biome: BiomeId;
+  baseIncome: number;
+  floors: number;
+  roof: Roof;
+  width?: number;
+  wall: string; // W
+  wallDark: string; // w (edges)
+  win: string; // L (lit window — glow accent)
+  winOff: string; // l (unlit window)
+  roofC: string; // R
+  door: string; // D
+}
+
+function buildTower(s: TowerSpec): BuildingDef {
+  const W = s.width ?? 12;
+  const mid = Math.floor(W / 2);
+  const rows: string[] = [];
+  const pad = (n: number) => ".".repeat(Math.max(0, n));
+
+  // ---- roof section ----
+  if (s.roof === "spire") {
+    for (let i = 0; i < 4; i++) rows.push(pad(i) + "R".repeat(W - i * 2) + pad(i));
+  } else if (s.roof === "pyramid") {
+    for (let i = 0; i < 3; i++) rows.push(pad(i * 2) + "R".repeat(Math.max(1, W - i * 4)) + pad(i * 2));
+  } else if (s.roof === "antenna") {
+    rows.push(pad(mid) + "R" + pad(W - mid - 1));
+    rows.push(pad(mid) + "R" + pad(W - mid - 1));
+    rows.push(pad(mid - 1) + "RRR" + pad(W - mid - 2));
+  } else if (s.roof === "dome") {
+    rows.push(pad(2) + "R".repeat(W - 4) + pad(2));
+    rows.push(pad(1) + "R".repeat(W - 2) + pad(1));
+  } else {
+    rows.push("R".repeat(W));
+  }
+
+  // ---- floors: window row + wall band (2 rows per floor) ----
+  const winCols = [2, 3, 5, 6, 8, 9];
+  for (let f = 0; f < s.floors; f++) {
+    // window row
+    let row = "";
+    for (let c = 0; c < W; c++) {
+      if (c === 0 || c === W - 1) row += "w";
+      else if (winCols.includes(c)) row += (f * 5 + c * 3) % 7 < 3 ? "L" : "l";
+      else row += "W";
+    }
+    rows.push(row);
+    // wall band (floor separator)
+    let band = "";
+    for (let c = 0; c < W; c++) band += (c === 0 || c === W - 1) ? "w" : "W";
+    rows.push(band);
+  }
+
+  // ---- base with door ----
+  let base = "";
+  for (let c = 0; c < W; c++) {
+    if (c >= mid - 1 && c <= mid + 1) base += "D";
+    else if (c === 0 || c === W - 1) base += "w";
+    else base += "W";
+  }
+  rows.push(base);
+
+  return {
+    id: s.id,
+    name: s.name,
+    biome: s.biome,
+    w: W,
+    h: rows.length,
+    baseIncome: s.baseIncome,
+    palette: { W: s.wall, w: s.wallDark, L: s.win, l: s.winOff, R: s.roofC, D: s.door },
+    sprite: rows,
+  };
+}
+
+// Tower specs — dark navy walls + glowing windows per biome. Heights vary for a jagged skyline.
+const TOWER_SPECS: TowerSpec[] = [
+  // Dusk Plains — amber-lit slate towers
+  { id: "plainsA", name: "Amber Keep", biome: "plains", baseIncome: 2, floors: 6, roof: "flat", wall: "#2a3550", wallDark: "#1a2440", win: "#fbbf24", winOff: "#3a3520", roofC: "#4a5570", door: "#0e1424" },
+  { id: "plainsB", name: "Lantern Spire", biome: "plains", baseIncome: 2.4, floors: 8, roof: "antenna", wall: "#243049", wallDark: "#161f38", win: "#fbbf24", winOff: "#322e1c", roofC: "#3e4866", door: "#0c1220" },
+  // Shadow Wood — emerald-lit forest towers
+  { id: "forestA", name: "Moss Tower", biome: "forest", baseIncome: 4, floors: 5, roof: "spire", wall: "#1a2a22", wallDark: "#0f1a14", win: "#34d399", winOff: "#1f3a2a", roofC: "#2a4a36", door: "#0a1410" },
+  { id: "forestB", name: "Verdant Block", biome: "forest", baseIncome: 4.5, floors: 7, roof: "flat", wall: "#162620", wallDark: "#0c1812", win: "#34d399", winOff: "#1b3527", roofC: "#24402f", door: "#08120c" },
+  // Amber Wastes — golden-lit sandstone towers
+  { id: "desertA", name: "Sun Pagoda", biome: "desert", baseIncome: 5, floors: 6, roof: "dome", wall: "#3a2a18", wallDark: "#241a0c", win: "#fbbf24", winOff: "#3a2a10", roofC: "#5a3a1a", door: "#1a1008" },
+  { id: "desertB", name: "Dune Hall", biome: "desert", baseIncome: 5.5, floors: 8, roof: "flat", wall: "#322614", wallDark: "#1f1608", win: "#fbbf24", winOff: "#35280f", roofC: "#4e3416", door: "#160d06" },
+  // Frost Reach — cyan-lit ice towers
+  { id: "snowA", name: "Glacier Tower", biome: "snow", baseIncome: 6, floors: 7, roof: "spire", wall: "#1a2a3a", wallDark: "#101a24", win: "#67e8f9", winOff: "#2a3a44", roofC: "#2a4a5a", door: "#0a1018" },
+  { id: "snowB", name: "Frost Block", biome: "snow", baseIncome: 6.5, floors: 5, roof: "flat", wall: "#162634", wallDark: "#0c161e", win: "#67e8f9", winOff: "#263640", roofC: "#224050", door: "#080c12" },
+  // Emberlands — orange-lit volcanic towers
+  { id: "volcanoA", name: "Ember Forge", biome: "volcano", baseIncome: 9, floors: 6, roof: "pyramid", wall: "#2a1414", wallDark: "#1a0a0a", win: "#fb923c", winOff: "#3a1a08", roofC: "#4a1a1a", door: "#0a0404" },
+  { id: "volcanoB", name: "Cinder Block", biome: "volcano", baseIncome: 10, floors: 8, roof: "flat", wall: "#241010", wallDark: "#160808", win: "#fb923c", winOff: "#341608", roofC: "#3e1616", door: "#080202" },
+  // Sky Reach — white-lit cloud towers
+  { id: "skyA", name: "Cloud Spire", biome: "sky", baseIncome: 13, floors: 7, roof: "antenna", wall: "#1a2c48", wallDark: "#101c34", win: "#e0f2fe", winOff: "#2a3a50", roofC: "#3868a8", door: "#0a1424" },
+  { id: "skyB", name: "Sky Rise", biome: "sky", baseIncome: 14, floors: 9, roof: "flat", wall: "#162842", wallDark: "#0c1828", win: "#e0f2fe", winOff: "#263648", roofC: "#305e98", door: "#08101e" },
+  // Star Void — magenta-lit void towers
+  { id: "spaceA", name: "Nebula Tower", biome: "space", baseIncome: 18, floors: 8, roof: "antenna", wall: "#14142a", wallDark: "#08081a", win: "#c084fc", winOff: "#2a2a44", roofC: "#3a3a6a", door: "#050514" },
+  { id: "spaceB", name: "Cosmo Dome", biome: "space", baseIncome: 16, floors: 6, roof: "dome", wall: "#101024", wallDark: "#060614", win: "#c084fc", winOff: "#24243e", roofC: "#32325e", door: "#040410" },
+  // Crystal Rift — bright magenta-lit crystal towers
+  { id: "voidA", name: "Rift Spire", biome: "void", baseIncome: 24, floors: 9, roof: "spire", wall: "#1a1030", wallDark: "#10081f", win: "#e879f9", winOff: "#2a1a3a", roofC: "#4a2a6a", door: "#0a0518" },
+  { id: "voidB", name: "Void Gate", biome: "void", baseIncome: 22, floors: 7, roof: "pyramid", wall: "#160c2a", wallDark: "#0c0618", win: "#e879f9", winOff: "#261634", roofC: "#3e2460", door: "#080414" },
+];
+
+export const BUILDINGS: Record<string, BuildingDef> = Object.fromEntries(
+  TOWER_SPECS.map((s) => [s.id, buildTower(s)])
+);
 
 // ---------- Themes (palette swaps) ----------
 export const THEMES: Record<ThemeId, { id: ThemeId; name: string; cost: number; tint: string }> = {

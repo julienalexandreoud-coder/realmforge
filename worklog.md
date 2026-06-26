@@ -98,3 +98,20 @@ Stage Summary:
 - Economy is STABLE: no more exponential explosions (chain-completion + exp-bonus + achievement + linear-tapCoins bugs all fixed).
 - Visual theme unified: dark navy world + pixel buildings tinted to match the sleek dark UI panel (cyan/purple/orange/gold accents).
 - 4 major balance bugs caught only by the automated play loop.
+
+---
+Task ID: 31
+Agent: main
+Task: Make buildings taller and more city-like
+
+Work Log:
+- Replaced all 16 hand-drawn building sprites with a procedural `buildTower()` generator that produces tall multi-story towers: roof section (flat/spire/pyramid/antenna/dome) + N floors (each = lit-window row + wall band) + base with door
+- Towers are 12 cells wide × 13-21 rows tall (was ~9×6-11), with 3 window bays per floor and ~43% deterministic lit windows (glow accent per biome: amber/emerald/cyan/orange/white/magenta)
+- Bumped render pixel scale from 4→5 in drawBuilding & drawConstruction so towers are 60px wide (fill the 64px plot edge-to-edge → wall-to-wall skyline) and up to ~100px tall
+- Added window twinkle: lit windows occasionally flash white based on time+position sin → city feels alive
+- Rewrote drawParallax: replaced single mountain layer with a 2-layer distant city skyline (parallax 0.5 jagged silhouettes with window glints + 0.25 haze layer) for depth behind the built towers
+- Kept dark-navy themeTint (dark walls muted to navy, glow windows preserved) so city matches the sleek UI
+- VLM verified: tall multi-story towers, lit windows, wall-to-wall continuous city, distant skyline silhouette, "looks like a pixel-art city rather than scattered cottages"
+
+Stage Summary:
+- Buildings are now tall city towers with lit windows forming a continuous wall-to-wall skyline, plus a distant parallax skyline backdrop for depth. The world reads clearly as a pixel-art CITY at night, matching the dark-navy UI theme.
