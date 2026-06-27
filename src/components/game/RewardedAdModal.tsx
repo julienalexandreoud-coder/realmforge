@@ -4,19 +4,23 @@ import { useEffect, useState } from "react";
 
 const AD_DURATION = 5;
 
-// Detect the CrazyGames SDK. Only activate when actually hosted on
-// CrazyGames (the SDK throws "not initialized" on other domains).
-// In dev/standalone → fall back to a simulated 5s ad countdown so the
-// game is fully playable & testable offline.
-function hasCrazySDK(): boolean {
+// Try to use the CrazyGames SDK for a real rewarded ad. Returns true if the
+// SDK accepted the request, false if we should fall back to a simulated ad.
+// The SDK script is always loaded (static tag in layout.tsx for CrazyGames
+// QA detection), but only actually works when hosted on crazygames.com.
+function tryCrazyAd(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const host = window.location.hostname;
-    const onCrazy = host.includes("crazygames.com") || host.includes("1001games");
     const sdk = (window as any).CrazyGames?.SDK;
-    // Both the SDK object AND being on their domain (so it's initialized)
-    return onCrazy && !!sdk?.ad;
+    if (!sdk?.ad?.requestAd) return false;
+    sdk.ad.requestAd("rewarded", {
+      adFinished: () => useGame.getState().finishAd(),
+      adError: (_err: unknown) => useGame.getState().cancelAd(),
+      adStarted: () => {},
+    });
+    return true;
   } catch {
+    // SDK not initialized (we're not on crazygames.com) → use simulated ad
     return false;
   }
 }
@@ -31,20 +35,13 @@ export default function RewardedAdModal() {
 
   useEffect(() => {
     if (!showAd) return;
-    // If the CrazyGames SDK is available, request a REAL rewarded ad.
-    // The SDK handles its own ad UI; we just react to adFinished/adError.
-    if (hasCrazySDK()) {
+    // Try the real CrazyGames SDK first. If it works, the SDK shows its own
+    // ad UI and calls adFinished/adError. If it throws (dev/standalone),
+    // fall back to the simulated 5-second ad countdown.
+    const sdkOk = tryCrazyAd();
+    if (sdkOk) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setUsingSDK(true);
-      try {
-        (window as any).CrazyGames.SDK.ad.requestAd("rewarded", {
-          adFinished: () => useGame.getState().finishAd(),
-          adError: (_err: unknown) => useGame.getState().cancelAd(),
-          adStarted: () => {},
-        });
-      } catch {
-        useGame.getState().cancelAd();
-      }
       return;
     }
     // --- DEV FALLBACK: simulated 5s ad countdown ---

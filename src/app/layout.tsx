@@ -47,6 +47,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        {/* CrazyGames SDK v3 — loaded statically so CrazyGames' QA scanner
+            detects SDK functionality. The SDK auto-initializes when hosted
+            on crazygames.com; on other domains the calls are simply no-ops
+            (guarded in RewardedAdModal.tsx via hostname check). */}
+        <script
+          src="https://sdk.crazygames.com/crazygames-sdk-v3.js"
+          async
+        ></script>
+      </head>
       <body
         className={`${pixel.variable} ${body.variable} antialiased bg-[#0a0a1a] text-slate-100 overscroll-none`}
         style={{ fontFamily: "var(--font-body), monospace" }}
