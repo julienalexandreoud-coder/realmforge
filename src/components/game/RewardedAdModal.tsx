@@ -1,18 +1,22 @@
 "use client";
 import { useGame } from "@/lib/store/gameStore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const AD_DURATION = 5;
 
 // Try to use the CrazyGames SDK for a real rewarded ad. Returns true if the
 // SDK accepted the request, false if we should fall back to a simulated ad.
-// The SDK script is always loaded (static tag in layout.tsx for CrazyGames
-// QA detection), but only actually works when hosted on crazygames.com.
-function tryCrazyAd(): boolean {
+// The SDK must be initialized first (see CrazyGamesSDKLoader). If init hasn't
+// completed or we're off crazygames.com, falls back to simulated ad.
+async function tryCrazyAd(): Promise<boolean> {
   if (typeof window === "undefined") return false;
   try {
     const sdk = (window as any).CrazyGames?.SDK;
     if (!sdk?.ad?.requestAd) return false;
+    // Ensure SDK is initialized (v3 requires this before any ad call)
+    if (typeof sdk.init === "function") {
+      try { await sdk.init(); } catch { /* may already be inited */ }
+    }
     sdk.ad.requestAd("rewarded", {
       adFinished: () => useGame.getState().finishAd(),
       adError: (_err: unknown) => useGame.getState().cancelAd(),
@@ -32,36 +36,42 @@ export default function RewardedAdModal() {
   const [count, setCount] = useState(AD_DURATION);
   const [done, setDone] = useState(false);
   const [usingSDK, setUsingSDK] = useState(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!showAd) return;
-    // Try the real CrazyGames SDK first. If it works, the SDK shows its own
-    // ad UI and calls adFinished/adError. If it throws (dev/standalone),
-    // fall back to the simulated 5-second ad countdown.
-    const sdkOk = tryCrazyAd();
-    if (sdkOk) {
+    let cancelled = false;
+    // Try the real CrazyGames SDK first (async — it calls init()).
+    // If it works, the SDK shows its own ad UI and calls adFinished/adError.
+    // If it fails (dev/standalone), fall back to the simulated ad countdown.
+    tryCrazyAd().then((sdkOk) => {
+      if (cancelled) return;
+      if (sdkOk) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setUsingSDK(true);
+        return;
+      }
+      // --- DEV FALLBACK: simulated 5s ad countdown ---
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUsingSDK(true);
-      return;
-    }
-    // --- DEV FALLBACK: simulated 5s ad countdown ---
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setUsingSDK(false);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCount(AD_DURATION);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDone(false);
-    const i = setInterval(() => {
-      setCount((c) => {
-        if (c <= 1) {
-          clearInterval(i);
-          setDone(true);
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(i);
+      setUsingSDK(false);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCount(AD_DURATION);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDone(false);
+      const i = setInterval(() => {
+        setCount((c) => {
+          if (c <= 1) {
+            clearInterval(i);
+            setDone(true);
+            return 0;
+          }
+          return c - 1;
+        });
+      }, 1000);
+      // attach cleanup
+      cleanupRef.current = () => clearInterval(i);
+    });
+    return () => { cancelled = true; cleanupRef.current?.(); };
   }, [showAd]);
   if (!showAd) return null;
   // When using the real SDK, it renders its own overlay — hide ours.

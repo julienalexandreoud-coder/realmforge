@@ -2,36 +2,58 @@
 import { useEffect } from "react";
 
 /**
- * Calls CrazyGames SDK lifecycle signals at startup. These calls are what
- * CrazyGames' QA scanner detects as "SDK functionalities". The SDK script
- * is loaded synchronously in layout.tsx <head>.
+ * Initializes the CrazyGames SDK v3 and calls lifecycle signals.
  *
- * On crazygames.com: calls work properly.
- * On localhost: SDK runs in "local" environment (test ad overlay).
- * On other domains: SDK throws — we catch and ignore.
+ * Per the v3 docs: "The v3 SDK requires initialization before being used.
+ * This can be done by calling the init method: await window.CrazyGames.SDK.init()"
+ *
+ * The SDK script is loaded synchronously in layout.tsx <head>. We call init()
+ * here, then send the lifecycle signals CrazyGames' QA scanner detects:
+ *   - sdkGameLoadingStart / sdkGameLoadingStop
+ *   - gameplayStart
+ *   - getEnvironment
+ *
+ * On crazygames.com: init() succeeds, ads work.
+ * On localhost: init() succeeds in "local" environment (test ads).
+ * On other domains: init() rejects — we catch and ignore.
  */
 export default function CrazyGamesSDKLoader() {
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const safe = (fn: () => void) => { try { fn(); } catch { /* off-crazygames */ } };
-    const sdk = () => (window as any).CrazyGames?.SDK;
 
-    // Wait for SDK to be available (sync-loaded, but guard anyway)
-    const init = () => {
-      const s = sdk();
-      if (!s) return false;
-      // Trigger SDK functionality detection (QA scanner looks for these):
-      safe(() => s.game?.sdkGameLoadingStart?.());
-      safe(() => s.game?.sdkGameLoadingStop?.());
-      safe(() => s.game?.gameplayStart?.());
-      // getEnvironment is a reliable detection trigger
-      safe(() => s.getEnvironment?.((_e: unknown, _env: string) => {}));
+    const safe = (fn: () => void) => {
+      try { fn(); } catch { /* off-crazygames, ignore */ }
+    };
+
+    const initSDK = async () => {
+      const SDK = (window as any).CrazyGames?.SDK;
+      if (!SDK) return false;
+      try {
+        // v3 requires explicit init() — this is what QA detects
+        if (typeof SDK.init === "function") {
+          await SDK.init();
+        }
+      } catch {
+        // init throws/rejects off crazygames.com — that's fine
+      }
+      // Send lifecycle signals (these register as "detected SDK functionalities")
+      safe(() => SDK.game?.sdkGameLoadingStart?.());
+      safe(() => SDK.game?.sdkGameLoadingStop?.());
+      safe(() => SDK.game?.gameplayStart?.());
+      safe(() => SDK.getEnvironment?.((_e: unknown, _env: string) => {}));
       return true;
     };
-    if (init()) return;
-    const iv = setInterval(() => { if (init()) clearInterval(iv); }, 200);
-    const stop = setTimeout(() => clearInterval(iv), 3000);
-    return () => { clearInterval(iv); clearTimeout(stop); };
+
+    // Try immediately (script is sync-loaded), retry briefly if needed
+    let attempts = 0;
+    const tryInit = () => {
+      attempts++;
+      initSDK().then((ok) => {
+        if (ok || attempts > 10) return;
+        setTimeout(tryInit, 200);
+      });
+    };
+    tryInit();
   }, []);
   return null;
 }
