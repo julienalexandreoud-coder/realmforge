@@ -4,11 +4,21 @@ import { useEffect, useState } from "react";
 
 const AD_DURATION = 5;
 
-// Detect the CrazyGames SDK (present only when published on CrazyGames).
-// In dev/standalone the SDK is absent → we fall back to a simulated
-// 5-second ad countdown so the game is fully playable & testable offline.
+// Detect the CrazyGames SDK. Only activate when actually hosted on
+// CrazyGames (the SDK throws "not initialized" on other domains).
+// In dev/standalone → fall back to a simulated 5s ad countdown so the
+// game is fully playable & testable offline.
 function hasCrazySDK(): boolean {
-  return typeof window !== "undefined" && !!(window as any).CrazyGames?.SDK?.ad;
+  if (typeof window === "undefined") return false;
+  try {
+    const host = window.location.hostname;
+    const onCrazy = host.includes("crazygames.com") || host.includes("1001games");
+    const sdk = (window as any).CrazyGames?.SDK;
+    // Both the SDK object AND being on their domain (so it's initialized)
+    return onCrazy && !!sdk?.ad;
+  } catch {
+    return false;
+  }
 }
 
 export default function RewardedAdModal() {
