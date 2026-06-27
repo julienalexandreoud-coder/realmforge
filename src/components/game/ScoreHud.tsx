@@ -35,7 +35,7 @@ export default function ScoreHud() {
       <div className="max-w-6xl mx-auto px-2 sm:px-4 py-2 flex items-center gap-2 sm:gap-3 flex-wrap">
         <div className="flex items-center gap-2 mr-1">
           <img
-            src="/realmforge-icon.png"
+            src="./realmforge-icon.png"
             alt="REALMFORGE"
             className="w-9 h-9"
             style={{ imageRendering: "pixelated" }}

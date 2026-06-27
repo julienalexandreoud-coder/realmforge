@@ -23,20 +23,20 @@ export const metadata: Metadata = {
   keywords: ["pixel art game", "clicker game", "idle game", "city builder", "indie game", "realmforge"],
   authors: [{ name: "REALMFORGE" }],
   icons: {
-    icon: "/realmforge-icon.png",
-    apple: "/realmforge-icon.png",
+    icon: "./realmforge-icon.png",
+    apple: "./realmforge-icon.png",
   },
   openGraph: {
     title: "REALMFORGE — Infinite Pixel Kingdom Builder",
     description: "Tap to build an endless pixel realm across 8 biomes. Ascend for eternal power!",
     type: "website",
-    images: ["/realmforge-logo.png"],
+    images: ["./realmforge-logo.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "REALMFORGE",
     description: "Infinite pixel-art kingdom builder — tap, build, ascend!",
-    images: ["/realmforge-logo.png"],
+    images: ["./realmforge-logo.png"],
   },
 };
 

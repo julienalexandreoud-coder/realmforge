@@ -9,9 +9,13 @@ const nextConfig: NextConfig = {
     // CrazyGames static hosting can't optimize images on the fly.
     unoptimized: true,
   },
-  // The game is a single client-rendered page; trailing slash keeps asset
-  // paths consistent when hosted as static files.
-  trailingSlash: true,
+  // NO trailingSlash — CrazyGames serves the game from a subdirectory, and
+  // trailing slashes + absolute paths break asset loading there.
+  trailingSlash: false,
+  // Use RELATIVE asset paths so the game works when hosted in a subdirectory
+  // (CrazyGames serves games inside an iframe at a sub-path).
+  // Without this, Next emits absolute paths like "/_next/..." which 404.
+  assetPrefix: "./",
   typescript: {
     ignoreBuildErrors: true,
   },

@@ -240,7 +240,7 @@ export default function GameCanvas() {
         style={{ width: "100%", height: "100%", imageRendering: "pixelated" }}
       />
       <div className="pointer-events-none absolute top-2 left-2 flex items-center gap-2">
-        <img src="/realmforge-icon.png" alt="" className="w-7 h-7 rounded" style={{ imageRendering: "pixelated" }} />
+        <img src="./realmforge-icon.png" alt="" className="w-7 h-7 rounded" style={{ imageRendering: "pixelated" }} />
         <div className="font-pixel text-[10px] text-cyan-200 drop-shadow-[2px_2px_0_#000]">
           REALMFORGE
         </div>

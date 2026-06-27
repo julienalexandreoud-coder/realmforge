@@ -20,7 +20,7 @@ export default function NameDialog() {
         <DialogHeader>
           <div className="flex justify-center mb-2">
             <img
-              src="/realmforge-logo.png"
+              src="./realmforge-logo.png"
               alt="REALMFORGE"
               className="w-full max-w-xs"
               style={{ imageRendering: "pixelated" }}
