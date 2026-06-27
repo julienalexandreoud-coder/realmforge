@@ -504,7 +504,7 @@ export const useGame = create<GameStore>((set, get) => {
   },
 
   hardReset: () => {
-    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v7");
+    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v8");
     const base = defaultSave();
     set({
       ...base,

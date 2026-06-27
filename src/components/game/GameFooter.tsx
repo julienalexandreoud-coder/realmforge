@@ -40,6 +40,23 @@ export default function GameFooter() {
           <Play className="w-3 h-3" />
           TAP THE WORLD TO BUILD • DRAG TO SCROLL • ASCEND FOR ETERNAL POWER
         </div>
+
+        {/* Legal links — required by CrazyGames requirements */}
+        <div className="flex items-center gap-3 font-pixel text-[7px] text-slate-500 w-full justify-center sm:w-auto sm:justify-auto">
+          <button
+            onClick={() => (window as any).__openLegal?.("tc")}
+            className="hover:text-cyan-300 underline transition"
+          >
+            Terms &amp; Conditions
+          </button>
+          <span className="text-slate-700">•</span>
+          <button
+            onClick={() => (window as any).__openLegal?.("pp")}
+            className="hover:text-cyan-300 underline transition"
+          >
+            Privacy Policy
+          </button>
+        </div>
       </div>
     </footer>
   );

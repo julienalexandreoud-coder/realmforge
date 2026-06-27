@@ -14,6 +14,7 @@ import RewardedAdModal from "@/components/game/RewardedAdModal";
 import Toasts from "@/components/game/Toasts";
 import BonusOverlay from "@/components/game/BonusOverlay";
 import CrazyGamesSDKLoader from "@/components/game/CrazyGamesSDKLoader";
+import LegalModal from "@/components/game/LegalModal";
 import { getAudio } from "@/lib/game/audio";
 import { canAscend, ascensionRelicsGained } from "@/lib/game/engine";
 import { Zap, ShoppingCart, Infinity as Inf, Trophy, Medal } from "lucide-react";
@@ -111,6 +112,7 @@ export default function Home() {
       <RewardedAdModal key={showAd ?? "none"} />
       <BonusOverlay />
       <CrazyGamesSDKLoader />
+      <LegalModal />
       <Toasts />
     </div>
   );
