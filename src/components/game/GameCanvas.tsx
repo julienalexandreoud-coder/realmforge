@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import { useGame } from "@/lib/store/gameStore";
 import { biomeForIndex, buildingForPlot, PLOT_W, GROUND_H } from "@/lib/game/config";
-import { surgeActive, surgeRemainingMs, formatNumber, totalIncome } from "@/lib/game/engine";
+import { surgeActive, surgeRemainingMs, formatNumber } from "@/lib/game/engine";
 import type { BuildingDef, BiomeDef } from "@/lib/game/types";
 
 export default function GameCanvas() {
@@ -181,11 +181,6 @@ export default function GameCanvas() {
         pixelText(ctx, `GOLDEN x3 ${sec}s`, 14, 24, 1.5, "left", "#ffd700");
       }
 
-      // income readout (top right)
-      const inc = totalIncome(store);
-      if (inc > 0) {
-        pixelText(ctx, `${formatNumber(inc)}/s`, Math.floor(w - 8), 22, 1.5, "right", "#7dd3fc");
-      }
     };
     rafRef.current = requestAnimationFrame(render);
 

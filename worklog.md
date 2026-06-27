@@ -153,3 +153,22 @@ Work Log:
 Stage Summary:
 - Auto-builder is now much weaker (0.8%/s at level 1 = ~2min per building).
 - Coin bonuses (🪙/💎/⭐) now reliably appear on screen every 3-6s, are clearly visible (z-45, pulsing ring, glow), and clickable for bonus coins.
+
+---
+Task ID: 34
+Agent: main
+Task: Fix broken preview + remove passive income (coins without tapping)
+
+Work Log:
+- Preview was down because dev server got killed (sandbox reaps background processes). Restarted.
+- ROOT CAUSE of "coins when not clicking/building": the tick function granted `totalIncome * dt` coins every 100ms from cumulativeIncome (passive income from completed buildings). This is standard idle-game behavior but the user found it confusing/unwanted — they expect coins only from active play.
+- REMOVED passive income: deleted the `inc * dt → coins` block from the tick. Coins now come ONLY from: (1) tapping, (2) completing a building (bonus), (3) clicking floating coin/gem/star bonuses.
+- Repurposed the "Town Treasury" (income) upgrade: it previously boosted passive income (now useless). Changed it to boost the completion bonus instead — so "Completing buildings awards more bonus coins." Updated description + added incomeMult to completeBonus() in engine.
+- Removed the "/SEC" stat from the HUD (no longer relevant) and the income readout from the canvas.
+- Bumped save to v7.
+- Verified: fresh save → coins stay at 0 during 6s idle (no tapping) → coins grow to 5 after 5 taps. Passive income is gone.
+
+Stage Summary:
+- Preview restarted (server HTTP 200).
+- Coins no longer generate passively — you only earn by tapping, completing buildings, or clicking floating bonuses.
+- "Town Treasury" upgrade now boosts completion bonuses (still useful).

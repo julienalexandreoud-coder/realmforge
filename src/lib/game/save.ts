@@ -2,7 +2,7 @@
 import type { SaveState } from "./types";
 import { defaultSave } from "./config";
 
-const SAVE_KEY = "realmforge-save-v6";
+const SAVE_KEY = "realmforge-save-v7";
 const NAME_KEY = "realmforge-name-v1";
 
 export function loadSave(): SaveState {

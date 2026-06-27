@@ -504,7 +504,7 @@ export const useGame = create<GameStore>((set, get) => {
   },
 
   hardReset: () => {
-    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v6");
+    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v7");
     const base = defaultSave();
     set({
       ...base,
@@ -539,23 +539,17 @@ export const useGame = create<GameStore>((set, get) => {
     if (pulse !== s.buildPulse) updates.buildPulse = pulse;
     if (hammer !== s.hammerAnim) updates.hammerAnim = hammer;
 
-    // auto builder + passive income (dt = 0.1s)
+    // auto builder (dt = 0.1s). NO passive income — coins only come from
+    // tapping, completing buildings, and clicking floating bonuses.
     const dt = 0.1;
-    const inc = totalIncome(s);
-    if (inc > 0) {
-      const gain = inc * dt;
-      updates.coins = s.coins + gain;
-      updates.totalCoinsEarned = s.totalCoinsEarned + gain;
-      updates.runCoinsEarned = s.runCoinsEarned + gain;
-    }
     const abr = autoBuildRate(s);
     if (abr > 0) {
       let progress = s.activeProgress + (abr * dt);
       let builtCount = s.builtCount;
       let cumulativeIncome = s.cumulativeIncome;
-      let coins = updates.coins ?? s.coins;
-      let totalEarned = updates.totalCoinsEarned ?? s.totalCoinsEarned;
-      let runEarned = updates.runCoinsEarned ?? s.runCoinsEarned;
+      let coins = s.coins;
+      let totalEarned = s.totalCoinsEarned;
+      let runEarned = s.runCoinsEarned;
       let maxBiome = s.maxBiomeReached;
       // cap to 1 completion per tick (same anti-chain rule as tap)
       if (progress >= 1) {

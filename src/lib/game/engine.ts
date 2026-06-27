@@ -100,10 +100,10 @@ export function tapBuild(s: SaveState, combo: number, crit: boolean): number {
 // re-export so imports resolve from engine
 export { cfgBuildingProgressCost as buildingProgressCost };
 
-// coins earned when a building completes
+// coins earned when a building completes (income upgrade boosts this)
 export function completeBonus(s: SaveState, index: number, combo: number): number {
   const base = buildingCompleteBonusAt(index);
-  return base * coinMult(s) * comboMultiplier(combo) * (surgeActive(s) ? SURGE_MULT : 1) * relicMultiplier(s);
+  return base * coinMult(s) * incomeMult(s) * comboMultiplier(combo) * (surgeActive(s) ? SURGE_MULT : 1) * relicMultiplier(s);
 }
 
 // income added when building at index completes — halved again for slow economy

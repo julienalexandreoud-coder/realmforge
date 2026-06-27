@@ -344,7 +344,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   income: {
     id: "income",
     name: "Town Treasury",
-    desc: "Completed buildings produce more coins.",
+    desc: "Completing buildings awards more bonus coins.",
     icon: "🏛️",
     baseCost: 90,
     costGrowth: 1.25,

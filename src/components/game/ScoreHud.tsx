@@ -1,6 +1,6 @@
 "use client";
 import { useGame } from "@/lib/store/gameStore";
-import { formatNumber, surgeActive, surgeRemainingMs, totalIncome } from "@/lib/game/engine";
+import { formatNumber, surgeActive, surgeRemainingMs } from "@/lib/game/engine";
 import { Volume2, VolumeX, Music, Music2, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -10,7 +10,6 @@ export default function ScoreHud() {
   const built = useGame((s) => s.builtCount);
   const combo = useGame((s) => s.combo);
   const surgeEndsAt = useGame((s) => s.surgeEndsAt);
-  const cumulativeIncome = useGame((s) => s.cumulativeIncome);
   const muted = useGame((s) => s.muted);
   const musicOn = useGame((s) => s.musicOn);
   const toggleMute = useGame((s) => s.toggleMute);
@@ -27,7 +26,6 @@ export default function ScoreHud() {
   }, [surgeEndsAt]);
 
   const surgeOn = surgeActive({ surgeEndsAt } as any);
-  const inc = totalIncome({ cumulativeIncome, surgeEndsAt } as any);
 
   return (
     <header
@@ -54,7 +52,6 @@ export default function ScoreHud() {
 
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
           <Stat icon="🪙" label="COINS" value={formatNumber(coins)} color="text-amber-300" />
-          <Stat icon="🏛️" label="/SEC" value={formatNumber(inc)} color="text-emerald-300" />
           <Stat icon="🏺" label="RELICS" value={formatNumber(relics)} color="text-fuchsia-300" />
           <Stat icon="🏘️" label="BUILT" value={formatNumber(built)} color="text-cyan-300" />
           {combo > 1 && <Stat icon="🔥" label="COMBO" value={`${combo}×`} color="text-orange-300" pulse />}
