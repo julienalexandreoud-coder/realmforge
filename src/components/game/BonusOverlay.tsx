@@ -13,24 +13,28 @@ export default function BonusOverlay() {
   const collect = useGame((s) => s.collectBonus);
 
   return (
-    <div className="fixed inset-0 z-20 pointer-events-none">
-      {bonuses.map((b) => {
+    <div className="fixed inset-0 z-[45] pointer-events-none">
+      {bonuses.map((b, i) => {
         const st = TYPE_STYLE[b.type];
         const age = Date.now() - b.born;
         const lifeLeft = b.expiresAt - Date.now();
         const fadeOut = lifeLeft < 1200 ? lifeLeft / 1200 : 1;
         const pulse = 1 + Math.sin(age / 150) * 0.08;
+        // guard against NaN/undefined coordinates — default to a visible spread
+        const safeX = isFinite(b.x) ? b.x : 150 + i * 80;
+        const safeY = isFinite(b.y) ? b.y : 150 + i * 20;
         return (
           <button
             key={b.id}
-            onPointerDown={(e) => {
+            onClick={(e) => {
               e.stopPropagation();
               collect(b.id);
             }}
+            onPointerDown={(e) => e.stopPropagation()}
             className={`absolute pointer-events-auto flex flex-col items-center justify-center select-none transition-transform`}
             style={{
-              left: b.x,
-              top: b.y,
+              left: safeX,
+              top: safeY,
               transform: `translate(-50%,-50%) scale(${pulse})`,
               opacity: fadeOut,
             }}

@@ -88,7 +88,9 @@ interface GameStore extends SaveState, RuntimeState {
 let floatId = 1;
 let toastId = 1;
 
-export const useGame = create<GameStore>((set, get) => ({
+export const useGame = create<GameStore>((set, get) => {
+  if (typeof window !== "undefined") (window as any).__game = { getState: get };
+  return ({
   ...defaultSave(),
   // runtime
   combo: 0,
@@ -502,7 +504,7 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   hardReset: () => {
-    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v5");
+    if (typeof window !== "undefined") localStorage.removeItem("realmforge-save-v6");
     const base = defaultSave();
     set({
       ...base,
@@ -589,35 +591,52 @@ export const useGame = create<GameStore>((set, get) => ({
     const spawnBonus = () => {
       const w = typeof window !== "undefined" ? window.innerWidth : 800;
       const h = typeof window !== "undefined" ? window.innerHeight : 600;
-      // spawn in the upper-middle area of the screen
-      const x = 60 + Math.random() * Math.max(120, w - 120);
-      const y = 80 + Math.random() * Math.max(100, h * 0.5);
+      // restrict to the game canvas area (left ~60% of screen on desktop, full on mobile)
+      const areaW = w >= 1024 ? w * 0.6 : w;
+      const px = 50 + Math.random() * Math.max(100, areaW - 100);
+      const py = 100 + Math.random() * Math.max(60, h * 0.4);
       const roll = Math.random();
       const type: "coin" | "gem" | "star" = roll < 0.65 ? "coin" : roll < 0.92 ? "gem" : "star";
-      // value scales with built count + a base
       const baseVal = 5 + Math.sqrt(s.builtCount + 1) * 8;
       const value = Math.floor(
         (type === "coin" ? baseVal : type === "gem" ? baseVal * 5 : baseVal * 25) * (1 + s.relics * 0.03)
       );
       const id = floatId++;
-      const lifeMs = type === "star" ? 5000 : type === "gem" ? 6500 : 8000;
+      const lifeMs = type === "star" ? 8000 : type === "gem" ? 10000 : 12000;
       const newBonuses = [...s.bonuses, {
-        id, x, y, vx: (Math.random() - 0.5) * 0.4, vy: -0.15 - Math.random() * 0.2,
-        type, value, born: now, expiresAt: now + lifeMs,
+        id: id,
+        x: px,
+        y: py,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: -0.1 - Math.random() * 0.15,
+        type: type,
+        value: value,
+        born: now,
+        expiresAt: now + lifeMs,
       }].slice(-5);
       updates.bonuses = newBonuses;
     };
     // spawn on schedule
     if (now >= s.nextBonusAt) {
       spawnBonus();
-      // next spawn in 6-14s
-      updates.nextBonusAt = now + 6000 + Math.random() * 8000;
+      // next spawn in 3-6s (frequent so there's almost always one visible)
+      updates.nextBonusAt = now + 3000 + Math.random() * 3000;
     }
-    // age existing bonuses (drift + expire)
+    // age existing bonuses (drift + expire), clamped to screen bounds
     if (s.bonuses.length > 0) {
+      const w = typeof window !== "undefined" ? window.innerWidth : 800;
+      const h = typeof window !== "undefined" ? window.innerHeight : 600;
       const aged = updates.bonuses ?? s.bonuses;
       updates.bonuses = aged
-        .map((b) => ({ ...b, x: b.x + b.vx, y: b.y + b.vy, vy: b.vy * 0.99 }))
+        .map((b) => {
+          const bx = isFinite(b.x) ? b.x : 100;
+          const by = isFinite(b.y) ? b.y : 100;
+          let nx = bx + b.vx;
+          let ny = by + b.vy;
+          nx = Math.max(40, Math.min(w - 40, nx));
+          ny = Math.max(80, Math.min(h - 80, ny));
+          return { ...b, x: nx, y: ny, vy: b.vy * 0.99 };
+        })
         .filter((b) => now < b.expiresAt);
     }
 
@@ -730,4 +749,5 @@ export const useGame = create<GameStore>((set, get) => ({
       // ignore
     }
   },
-}));
+  });
+});

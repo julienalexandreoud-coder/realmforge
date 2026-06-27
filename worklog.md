@@ -132,3 +132,24 @@ Work Log:
 Stage Summary:
 - Auto-builder now works persistently (setInterval game loop, independent of canvas RAF). Percentage-based scaling makes it always useful.
 - Clickable coin/gem/star bonuses appear on screen every 6-14s — tap them for bonus coins. Adds active engagement between building taps.
+
+---
+Task ID: 33
+Agent: main
+Task: Nerf auto-builder further + fix invisible coin bonuses
+
+Work Log:
+- NERFED AUTO-BUILDER: reduced from 3%/level/s to 0.8%/level/s (level 1 = 0.8%/s = 125s per building, was 17s). Raised base cost 250→300, cost growth 1.30→1.35, max level 150→100. Now a supplement, not a replacement for tapping.
+- FIXED INVISIBLE BONUSES (multiple bugs):
+  1. z-index: overlay was z-20 (behind HUD z-30) → bumped to z-45 (above HUD, below modals z-50)
+  2. Bonus coordinates were NaN: the Zustand store module wasn't re-evaluating on HMR, so stale spawn code kept running. Fixed by adding NaN guards in the BonusOverlay component itself (isFinite check → fallback to visible spread positions)
+  3. onClick vs onPointerDown: bonus buttons used onPointerDown which didn't fire on .click() → added onClick handler
+  4. Spawn frequency: was 6-14s → now 3-6s so there's almost always one visible
+  5. Bonus lifetime: extended to 8-12s (was 5-8s)
+  6. Position clamping: added bounds in aging code so bonuses never drift off-screen
+- Verified: 3 bonuses visible at x:131/211/290, all on-screen. VLM confirms "floating glowing coin bonuses visible on the left side, each marked with +44"
+- Verified: clicking bonus gives coins (0→13→44 per click)
+
+Stage Summary:
+- Auto-builder is now much weaker (0.8%/s at level 1 = ~2min per building).
+- Coin bonuses (🪙/💎/⭐) now reliably appear on screen every 3-6s, are clearly visible (z-45, pulsing ring, glow), and clickable for bonus coins.
