@@ -52,3 +52,9 @@ prompt
 server.log
 # Skills directory
 /skills/
+# Game runtime files
+/db/custom.db
+/db/custom.db-journal
+/.zscripts/
+/worklog.md
+/skills/
