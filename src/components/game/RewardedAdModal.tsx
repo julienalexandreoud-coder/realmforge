@@ -4,15 +4,46 @@ import { useEffect, useState } from "react";
 
 const AD_DURATION = 5;
 
+// Detect the CrazyGames SDK (present only when published on CrazyGames).
+// In dev/standalone the SDK is absent → we fall back to a simulated
+// 5-second ad countdown so the game is fully playable & testable offline.
+function hasCrazySDK(): boolean {
+  return typeof window !== "undefined" && !!(window as any).CrazyGames?.SDK?.ad;
+}
+
 export default function RewardedAdModal() {
   const showAd = useGame((s) => s.showAd);
   const finishAd = useGame((s) => s.finishAd);
   const cancelAd = useGame((s) => s.cancelAd);
   const [count, setCount] = useState(AD_DURATION);
   const [done, setDone] = useState(false);
+  const [usingSDK, setUsingSDK] = useState(false);
 
   useEffect(() => {
     if (!showAd) return;
+    // If the CrazyGames SDK is available, request a REAL rewarded ad.
+    // The SDK handles its own ad UI; we just react to adFinished/adError.
+    if (hasCrazySDK()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setUsingSDK(true);
+      try {
+        (window as any).CrazyGames.SDK.ad.requestAd("rewarded", {
+          adFinished: () => useGame.getState().finishAd(),
+          adError: (_err: unknown) => useGame.getState().cancelAd(),
+          adStarted: () => {},
+        });
+      } catch {
+        useGame.getState().cancelAd();
+      }
+      return;
+    }
+    // --- DEV FALLBACK: simulated 5s ad countdown ---
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUsingSDK(false);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCount(AD_DURATION);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDone(false);
     const i = setInterval(() => {
       setCount((c) => {
         if (c <= 1) {
@@ -25,8 +56,9 @@ export default function RewardedAdModal() {
     }, 1000);
     return () => clearInterval(i);
   }, [showAd]);
-
   if (!showAd) return null;
+  // When using the real SDK, it renders its own overlay — hide ours.
+  if (usingSDK) return null;
 
   const config: Record<string, { icon: string; title: string; reward: string }> = {
     surge: { icon: "⚡", title: "GOLDEN AGE", reward: "3× everything for 60s" },

@@ -705,16 +705,30 @@ export const useGame = create<GameStore>((set, get) => {
   loadLeaderboard: async () => {
     set({ leaderboardLoading: true });
     try {
-      const res = await fetch("/api/leaderboard");
-      const data = await res.json();
+      // LOCAL-ONLY leaderboard (CrazyGames doesn't allow external API calls).
+      // Scores are stored in localStorage so the game is fully self-contained.
+      const raw = typeof window !== "undefined" ? localStorage.getItem("realmforge-leaderboard") : null;
+      const entries: any[] = raw ? JSON.parse(raw) : [];
       const name = get().playerName;
+      // seed with a few default rivals if empty so the board isn't blank
+      if (entries.length === 0) {
+        const defaults = [
+          { name: "ArchitectPrime", totalCoins: 5185655, ascension: 3, built: 142 },
+          { name: "PixelMayor", totalCoins: 1200000, ascension: 1, built: 87 },
+          { name: "CitySage", totalCoins: 480000, ascension: 1, built: 64 },
+          { name: "ForgeMaster", totalCoins: 95000, ascension: 0, built: 38 },
+          { name: "BuilderBob", totalCoins: 12000, ascension: 0, built: 15 },
+        ];
+        if (typeof window !== "undefined") localStorage.setItem("realmforge-leaderboard", JSON.stringify(defaults));
+        entries.push(...defaults);
+      }
       set({
-        leaderboard: (data.entries || []).map((e: any) => ({
-          name: e.playerName,
-          totalCoins: e.totalShards, // field reused
-          ascension: e.prestige,
-          built: e.maxLevel,
-          you: name ? e.playerName === name : false,
+        leaderboard: entries.map((e) => ({
+          name: e.name,
+          totalCoins: String(e.totalCoins),
+          ascension: e.ascension,
+          built: e.built,
+          you: name ? e.name === name : false,
         })),
         leaderboardLoading: false,
       });
@@ -727,16 +741,20 @@ export const useGame = create<GameStore>((set, get) => {
     const s = get();
     if (!s.playerName) return;
     try {
-      await fetch("/api/leaderboard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerName: s.playerName,
-          totalShards: Math.floor(s.totalCoinsEarned),
-          prestige: s.ascensionCount,
-          maxLevel: s.builtCount,
-        }),
-      });
+      // LOCAL-ONLY: upsert this player's best score in localStorage
+      const raw = typeof window !== "undefined" ? localStorage.getItem("realmforge-leaderboard") : null;
+      const entries: any[] = raw ? JSON.parse(raw) : [];
+      const existing = entries.find((e) => e.name === s.playerName);
+      const score = Math.floor(s.totalCoinsEarned);
+      if (existing) {
+        if (score > Number(existing.totalCoins)) existing.totalCoins = score;
+        if (s.ascensionCount > existing.ascension) existing.ascension = s.ascensionCount;
+        if (s.builtCount > existing.built) existing.built = s.builtCount;
+      } else {
+        entries.push({ name: s.playerName, totalCoins: score, ascension: s.ascensionCount, built: s.builtCount });
+      }
+      entries.sort((a, b) => Number(b.totalCoins) - Number(a.totalCoins));
+      if (typeof window !== "undefined") localStorage.setItem("realmforge-leaderboard", JSON.stringify(entries.slice(0, 100)));
       set({ submittedAt: Date.now() });
       if (get().leaderboard.length === 0 || Math.random() < 0.3) get().loadLeaderboard();
     } catch {

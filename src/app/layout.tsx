@@ -47,6 +47,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        {/* CrazyGames SDK — loaded only when published on CrazyGames.
+            In dev/standalone it's absent and the game falls back to a
+            simulated rewarded-ad modal (see RewardedAdModal.tsx). */}
+        <script
+          src="https://sdk.crazygames.com/crazygames-sdk-v3.js"
+          async
+        ></script>
+      </head>
       <body
         className={`${pixel.variable} ${body.variable} antialiased bg-[#0a0a1a] text-slate-100 overscroll-none`}
         style={{ fontFamily: "var(--font-body), monospace" }}

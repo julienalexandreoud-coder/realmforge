@@ -58,3 +58,6 @@ server.log
 /.zscripts/
 /worklog.md
 /skills/
+
+# static build output
+/out/
